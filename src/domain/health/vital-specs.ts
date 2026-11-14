@@ -1,4 +1,15 @@
-export const ALGORITHM_VERSION = '2.0.0' as const;
+import type { ObservationContext } from '../nasa/nasa-types';
+import type { BaselineMap } from './baseline-analyzer';
+import type {
+  CoverageSummary,
+  MoodValue,
+  NumericVitalKey,
+  QualityAssessment,
+  SystemCoverage,
+} from './context-specs';
+import { VERIFIED_SOURCES, type RuleAuditTrace } from './rules-catalog';
+
+export const ALGORITHM_VERSION = '3.0.0' as const;
 
 export const STATUS = {
   GREEN: 'GREEN',
@@ -8,30 +19,21 @@ export const STATUS = {
 } as const;
 
 export type HealthStatus = (typeof STATUS)[keyof typeof STATUS];
+export type { MoodValue, NumericVitalKey };
 
 export const STATUS_LABELS: Record<HealthStatus, string> = {
-  GREEN: 'Óptimo',
-  YELLOW: 'Cuidado',
-  RED: 'Peligro',
+  GREEN: 'Óptimo / Operativo',
+  YELLOW: 'Precaución / Seguimiento',
+  RED: 'Prioridad Alta / Revisión',
   INSUFFICIENT_DATA: 'Datos Insuficientes',
 };
 
 export const STATUS_RANK: Record<HealthStatus, number> = {
-  GREEN: 0,
-  YELLOW: 1,
-  RED: 2,
-  INSUFFICIENT_DATA: 3,
+  INSUFFICIENT_DATA: 0,
+  GREEN: 1,
+  YELLOW: 2,
+  RED: 3,
 };
-
-export type MoodValue = 'excelente' | 'bien' | 'cansado' | 'estresado' | 'agotado';
-
-export type NumericVitalKey =
-  | 'sleep_hours'
-  | 'heart_rate'
-  | 'bp_systolic'
-  | 'bp_diastolic'
-  | 'glucose'
-  | 'temperature';
 
 export type SystemId = 'mind' | 'heart' | 'body';
 export type ActionIconKey = 'droplet' | 'activity' | 'moon' | 'wind' | 'radio' | 'sliders' | 'shield';
@@ -47,13 +49,13 @@ export interface VitalValues {
 }
 
 export interface PartialVitalValues {
-  sleep_hours: number | null;
-  mood: MoodValue | null;
-  heart_rate: number | null;
-  bp_systolic: number | null;
-  bp_diastolic: number | null;
-  glucose: number | null;
-  temperature: number | null;
+  sleep_hours?: number | null;
+  mood?: MoodValue | null;
+  heart_rate?: number | null;
+  bp_systolic?: number | null;
+  bp_diastolic?: number | null;
+  glucose?: number | null;
+  temperature?: number | null;
 }
 
 export interface VitalNumericSpec {
@@ -68,12 +70,12 @@ export interface VitalNumericSpec {
 export const VITAL_SPECS: Record<NumericVitalKey, VitalNumericSpec> & {
   mood: { allowed: readonly MoodValue[]; label: string };
 } = {
-  sleep_hours: { min: 0, max: 14, step: 0.5, unit: 'h', optimalText: '7.0 - 9.0 h', label: 'Horas de sueño' },
-  heart_rate: { min: 40, max: 180, step: 1, unit: 'BPM', optimalText: '60 - 85 BPM', label: 'Frecuencia cardíaca' },
-  bp_systolic: { min: 70, max: 200, step: 1, unit: 'mmHg', optimalText: '100 - 125 mmHg', label: 'Presión sistólica (alta)' },
-  bp_diastolic: { min: 40, max: 130, step: 1, unit: 'mmHg', optimalText: '65 - 80 mmHg', label: 'Presión diastólica (baja)' },
-  glucose: { min: 50, max: 250, step: 1, unit: 'mg/dL', optimalText: '70 - 99 mg/dL', label: 'Glucosa en sangre' },
-  temperature: { min: 34.5, max: 41.0, step: 0.1, unit: '°C', optimalText: '36.1 - 37.2 °C', label: 'Temperatura corporal' },
+  sleep_hours: { min: 0, max: 16, step: 0.5, unit: 'h', optimalText: '7.0 - 9.0 h', label: 'Horas de sueño' },
+  heart_rate: { min: 30, max: 220, step: 1, unit: 'lpm', optimalText: '60 - 100 lpm', label: 'Frecuencia cardíaca' },
+  bp_systolic: { min: 55, max: 250, step: 1, unit: 'mmHg', optimalText: '90 - 120 mmHg', label: 'Presión sistólica (alta)' },
+  bp_diastolic: { min: 30, max: 150, step: 1, unit: 'mmHg', optimalText: '60 - 80 mmHg', label: 'Presión diastólica (baja)' },
+  glucose: { min: 20, max: 600, step: 1, unit: 'mg/dL', optimalText: '70 - 99 mg/dL (ayunas)', label: 'Glucosa en sangre' },
+  temperature: { min: 34.0, max: 42.5, step: 0.1, unit: '°C', optimalText: '36.1 - 37.2 °C', label: 'Temperatura corporal' },
   mood: { allowed: ['excelente', 'bien', 'cansado', 'estresado', 'agotado'], label: 'Estado de ánimo' },
 };
 
@@ -83,28 +85,70 @@ export interface ActionRecommendation {
 }
 
 export const ACTIONS = {
-  HYDRATE: { actionIcon: 'droplet', actionText: 'Hidratarse (Beber agua)' },
-  EXERCISE: { actionIcon: 'activity', actionText: 'Ejercicio / Estiramiento (30 min)' },
-  SLEEP: { actionIcon: 'moon', actionText: 'Descanso / Dormir' },
-  BREATHE: { actionIcon: 'wind', actionText: 'Respiración / Pausa mental (5 min)' },
-  COMMS: { actionIcon: 'radio', actionText: 'Avisar al equipo / Tierra en 1 clic' },
-  REVIEW_INPUT: { actionIcon: 'sliders', actionText: 'Completar o corregir los datos ingresados' },
+  HYDRATE: { actionIcon: 'droplet', actionText: 'Hidratar vía oral y reevaluar FC/PA en 10-15 min en reposo' },
+  EXERCISE: { actionIcon: 'activity', actionText: 'Actividad / estiramiento ligero (solo si no hay restricción)' },
+  SLEEP: { actionIcon: 'moon', actionText: 'Priorizar descanso / sueño y pausar carga cognitiva' },
+  BREATHE: { actionIcon: 'wind', actionText: 'Reposo sentado 5 min, respiración guiada y confirmar medición' },
+  COMMS: { actionIcon: 'radio', actionText: 'Registrar en bitácora médica y escalar según prioridad' },
+  REVIEW_INPUT: { actionIcon: 'sliders', actionText: 'Completar contexto (ayuno/postura) o repetir toma' },
+  ISOLATE: { actionIcon: 'shield', actionText: 'Reposo preventivo, monitoreo cada 2 h y suspender esfuerzo físico' },
 } as const satisfies Record<string, ActionRecommendation>;
 
 export interface ScientificReference {
+  id: string;
   source: string;
+  detail: string;
   url: string;
+  tier: string;
 }
 
-export const REFERENCES: Record<'MIND' | 'HEART' | 'BODY' | 'CSA', ScientificReference> = {
-  MIND: { source: 'NASA HRP — Hazards of Human Spaceflight (Isolation, Sleep & Stress)', url: 'https://www.nasa.gov/hrp/hazards/' },
-  HEART: { source: 'NASA HRP — Human Health & Cardiovascular Risks in Space', url: 'https://www.nasa.gov/hrp/risks/' },
-  BODY: { source: 'NASA HRP — Ongoing Metabolic, Thermoregulation & Immune Research', url: 'https://www.nasa.gov/hrp/ongoing-hrp-research/' },
-  CSA: { source: 'CSA — Astronaut Health & Spaceflight Science', url: 'https://www.asc-csa.gc.ca/eng/iss/science/why-do-we-conduct-science-experiments-in-space.asp' },
+export const REFERENCES: Record<'MIND' | 'HEART' | 'BODY' | 'CSA' | 'GLUCOSE' | 'FEVER', ScientificReference> = {
+  MIND: {
+    id: VERIFIED_SOURCES.nasa_sleep.id,
+    source: `${VERIFIED_SOURCES.nasa_sleep.organization} — ${VERIFIED_SOURCES.nasa_sleep.title}`,
+    detail: VERIFIED_SOURCES.nasa_sleep.sectionNote,
+    url: VERIFIED_SOURCES.nasa_sleep.url,
+    tier: VERIFIED_SOURCES.nasa_sleep.tier,
+  },
+  HEART: {
+    id: VERIFIED_SOURCES.aha_bp.id,
+    source: `${VERIFIED_SOURCES.aha_bp.organization} — ${VERIFIED_SOURCES.aha_bp.title}`,
+    detail: VERIFIED_SOURCES.aha_bp.sectionNote,
+    url: VERIFIED_SOURCES.aha_bp.url,
+    tier: VERIFIED_SOURCES.aha_bp.tier,
+  },
+  BODY: {
+    id: VERIFIED_SOURCES.nasa_orthostatic.id,
+    source: `${VERIFIED_SOURCES.nasa_orthostatic.organization} — ${VERIFIED_SOURCES.nasa_orthostatic.title}`,
+    detail: VERIFIED_SOURCES.nasa_orthostatic.sectionNote,
+    url: VERIFIED_SOURCES.nasa_orthostatic.url,
+    tier: VERIFIED_SOURCES.nasa_orthostatic.tier,
+  },
+  CSA: {
+    id: VERIFIED_SOURCES.csa_health.id,
+    source: `${VERIFIED_SOURCES.csa_health.organization} — ${VERIFIED_SOURCES.csa_health.title}`,
+    detail: VERIFIED_SOURCES.csa_health.sectionNote,
+    url: VERIFIED_SOURCES.csa_health.url,
+    tier: VERIFIED_SOURCES.csa_health.tier,
+  },
+  GLUCOSE: {
+    id: VERIFIED_SOURCES.niddk_glucose.id,
+    source: `${VERIFIED_SOURCES.niddk_glucose.organization} — ${VERIFIED_SOURCES.niddk_glucose.title}`,
+    detail: VERIFIED_SOURCES.niddk_glucose.sectionNote,
+    url: VERIFIED_SOURCES.niddk_glucose.url,
+    tier: VERIFIED_SOURCES.niddk_glucose.tier,
+  },
+  FEVER: {
+    id: VERIFIED_SOURCES.medline_fever.id,
+    source: `${VERIFIED_SOURCES.medline_fever.organization} — ${VERIFIED_SOURCES.medline_fever.title}`,
+    detail: VERIFIED_SOURCES.medline_fever.sectionNote,
+    url: VERIFIED_SOURCES.medline_fever.url,
+    tier: VERIFIED_SOURCES.medline_fever.tier,
+  },
 };
 
 export interface ConclusionCard {
-  id?: string;
+  id?: string | null;
   status: HealthStatus;
   label: string;
   title: string;
@@ -114,12 +158,15 @@ export interface ConclusionCard {
   reasons: string[];
   reference: ScientificReference;
   commsMessage?: string;
+  ruleTrace?: RuleAuditTrace;
 }
 
 export interface SystemEvaluation extends ConclusionCard {
   systemId: SystemId;
   systemName: string;
   systemIcon: 'brain' | 'heart' | 'shield';
+  coverage?: SystemCoverage;
+  metricsSummary?: string;
 }
 
 export interface ScorePenalty {
@@ -128,12 +175,18 @@ export interface ScorePenalty {
   penalty: number;
 }
 
+export interface ClinicalRestrictions {
+  restrictStrenuousExercise: boolean;
+  reasons: string[];
+}
+
 export interface HealthEvaluation {
   valid: boolean;
   algorithmVersion: string;
   overallStatus: HealthStatus;
   overallLabel: string;
   readinessScore: number | null;
+  scoreConfidence: 'high' | 'partial' | 'insufficient';
   scoreBreakdown: ScorePenalty[];
   fieldErrors: Record<string, string>;
   errors: string[];
@@ -142,5 +195,12 @@ export interface HealthEvaluation {
   crossConclusionId: string | null;
   triggeredCrosses: ConclusionCard[];
   commsMessage: string;
-  vitals: VitalValues | PartialVitalValues;
+  vitals: PartialVitalValues;
+  context: ObservationContext;
+  coverage: CoverageSummary;
+  quality: QualityAssessment;
+  baselines: BaselineMap;
+  ruleTraces: RuleAuditTrace[];
+  clinicalRestrictions: ClinicalRestrictions;
+  missingSystems: SystemId[];
 }

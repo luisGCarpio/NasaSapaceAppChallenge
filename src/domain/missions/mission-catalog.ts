@@ -9,6 +9,9 @@ export interface MissionItem {
   xpReward: number;
   completed: boolean;
   lastAwardedDate: string | null;
+  blockedByRestriction?: boolean;
+  restrictionReason?: string | null;
+  recommendedPriority?: boolean;
 }
 
 export interface GamificationState {

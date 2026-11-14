@@ -1,58 +1,74 @@
-import { STATUS, type ConclusionCard, type HealthStatus, type ScorePenalty, type VitalValues } from './vital-specs';
+import type { CoverageSummary } from './context-specs';
+import {
+  ConclusionCard,
+  HealthStatus,
+  PartialVitalValues,
+  STATUS,
+  ScorePenalty,
+  SystemEvaluation,
+  SystemId,
+} from './vital-specs';
 
-const MOOD_PENALTIES: Record<VitalValues['mood'], number> = {
-  excelente: 0,
-  bien: 2,
-  cansado: 8,
-  estresado: 12,
-  agotado: 20,
-};
+export interface WellnessScoreResult {
+  score: number | null;
+  confidence: 'high' | 'partial' | 'insufficient';
+  breakdown: ScorePenalty[];
+}
 
-/**
- * Calcula un índice orientativo de bienestar (0-100) con desglose transparente de penalizaciones.
- */
-export function computeWellnessIndex(
-  v: VitalValues,
-  overallStatus: HealthStatus,
-  crossConclusion: ConclusionCard
-): { readinessScore: number; scoreBreakdown: ScorePenalty[] } {
+export function computeWellnessIndex(opts: {
+  vitals: PartialVitalValues;
+  systems: Record<SystemId, SystemEvaluation>;
+  overallStatus: HealthStatus;
+  triggeredCrosses: ConclusionCard[];
+  coverage: CoverageSummary;
+}): WellnessScoreResult {
+  const { vitals, systems, overallStatus, triggeredCrosses, coverage } = opts;
+
+  if (overallStatus === STATUS.INSUFFICIENT_DATA || coverage.presentCount < 2) {
+    return {
+      score: null,
+      confidence: 'insufficient',
+      breakdown: coverage.presentCount === 1
+        ? [{ factor: 'Cobertura mínima', detail: 'Solo 1 indicador medido; índice compuesto omitido', penalty: 0 }]
+        : [],
+    };
+  }
+
+  let score = 100;
   const breakdown: ScorePenalty[] = [];
-  const addPenalty = (factor: string, detail: string, points: number) => {
-    if (points > 0) {
-      breakdown.push({ factor, detail, penalty: Math.round(points * 10) / 10 });
+
+  for (const sys of Object.values(systems)) {
+    if (sys.status === STATUS.RED) {
+      const pts = sys.systemId === 'heart' ? 35 : sys.systemId === 'body' ? 30 : 25;
+      score -= pts;
+      breakdown.push({ factor: sys.systemName, detail: sys.title, penalty: -pts });
+    } else if (sys.status === STATUS.YELLOW) {
+      const pts = sys.systemId === 'heart' ? 16 : 12;
+      score -= pts;
+      breakdown.push({ factor: sys.systemName, detail: sys.title, penalty: -pts });
     }
+  }
+
+  if (triggeredCrosses.length > 0) {
+    const crossPts = triggeredCrosses[0].status === STATUS.RED ? 15 : 8;
+    score -= crossPts;
+    breakdown.push({ factor: 'Correlación cruzada', detail: triggeredCrosses[0].title, penalty: -crossPts });
+  }
+
+  if (typeof vitals.sleep_hours === 'number' && vitals.sleep_hours < 7.0 && systems.mind.status === STATUS.GREEN) {
+    score -= 4;
+    breakdown.push({ factor: 'Sueño', detail: `${vitals.sleep_hours} h (< 7.0 h)`, penalty: -4 });
+  }
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+
+  if (overallStatus === STATUS.GREEN) score = Math.max(80, Math.min(100, score));
+  else if (overallStatus === STATUS.YELLOW) score = Math.max(50, Math.min(79, score));
+  else if (overallStatus === STATUS.RED) score = Math.max(15, Math.min(49, score));
+
+  return {
+    score,
+    confidence: coverage.presentCount >= 5 && coverage.missingIndicators.length <= 2 ? 'high' : 'partial',
+    breakdown,
   };
-
-  if (v.sleep_hours < 7) addPenalty('Sueño', `${v.sleep_hours.toFixed(1)} h (< 7.0 h)`, (7 - v.sleep_hours) * 6);
-  else if (v.sleep_hours > 10) addPenalty('Sueño', `${v.sleep_hours.toFixed(1)} h (> 10.0 h)`, (v.sleep_hours - 10) * 2);
-
-  addPenalty('Ánimo', `Estado '${v.mood}'`, MOOD_PENALTIES[v.mood] || 0);
-
-  if (v.heart_rate > 80) addPenalty('Pulso', `${v.heart_rate} BPM (> 80 BPM)`, (v.heart_rate - 80) * 0.5);
-  else if (v.heart_rate < 60) addPenalty('Pulso', `${v.heart_rate} BPM (< 60 BPM)`, (60 - v.heart_rate) * 0.8);
-
-  if (v.bp_systolic > 120) addPenalty('Presión sistólica', `${v.bp_systolic} mmHg (> 120)`, (v.bp_systolic - 120) * 0.45);
-  else if (v.bp_systolic < 105) addPenalty('Presión sistólica', `${v.bp_systolic} mmHg (< 105)`, (105 - v.bp_systolic) * 0.8);
-
-  if (v.bp_diastolic > 80) addPenalty('Presión diastólica', `${v.bp_diastolic} mmHg (> 80)`, (v.bp_diastolic - 80) * 0.5);
-  else if (v.bp_diastolic < 65) addPenalty('Presión diastólica', `${v.bp_diastolic} mmHg (< 65)`, (65 - v.bp_diastolic) * 0.8);
-
-  if (v.glucose > 95) addPenalty('Glucosa', `${v.glucose} mg/dL (> 95)`, (v.glucose - 95) * 0.35);
-  else if (v.glucose < 75) addPenalty('Glucosa', `${v.glucose} mg/dL (< 75)`, (75 - v.glucose) * 0.8);
-
-  if (v.temperature > 37.0) addPenalty('Temperatura', `${v.temperature.toFixed(1)} °C (> 37.0 °C)`, (v.temperature - 37.0) * 14);
-  else if (v.temperature < 36.2) addPenalty('Temperatura', `${v.temperature.toFixed(1)} °C (< 36.2 °C)`, (36.2 - v.temperature) * 14);
-
-  if (crossConclusion.status === STATUS.RED) addPenalty('Severidad clínica', `Conclusión crítica (${crossConclusion.title})`, 10);
-  else if (crossConclusion.status === STATUS.YELLOW) addPenalty('Severidad clínica', `Conclusión de precaución (${crossConclusion.title})`, 5);
-
-  const totalPenalty = breakdown.reduce((acc, item) => acc + item.penalty, 0);
-  const rawScore = Math.round(100 - totalPenalty);
-
-  let readinessScore: number;
-  if (overallStatus === STATUS.GREEN) readinessScore = Math.min(100, Math.max(80, rawScore));
-  else if (overallStatus === STATUS.YELLOW) readinessScore = Math.min(79, Math.max(50, rawScore));
-  else readinessScore = Math.min(49, Math.max(15, rawScore));
-
-  return { readinessScore, scoreBreakdown: breakdown };
 }

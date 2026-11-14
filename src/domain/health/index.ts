@@ -1,95 +1,134 @@
+import { analyzePersonalBaselines } from './baseline-analyzer';
+import { EvaluateHealthOptions, normalizeContext } from './context-specs';
 import { evaluateCrosses, getWorstStatus } from './cross-evaluator';
+import {
+  assessQuality,
+  buildInvalidEvaluation,
+  deriveClinicalRestrictions,
+} from './quality-restrictions';
 import { buildCommsMessage } from './report-builder';
+import type { RuleAuditTrace } from './rules-catalog';
 import { evaluateBody, evaluateHeart, evaluateMind } from './systems-evaluator';
 import { validateVitals } from './vital-schema';
 import {
-  ACTIONS,
   ALGORITHM_VERSION,
-  REFERENCES,
+  HealthEvaluation,
   STATUS,
   STATUS_LABELS,
-  type ConclusionCard,
-  type HealthEvaluation,
+  SystemEvaluation,
+  SystemId,
 } from './vital-specs';
 import { computeWellnessIndex } from './wellness-index';
 
 export * from './vital-specs';
-export * from './vital-schema';
-export * from './scenarios';
+export * from './context-specs';
+export * from './rules-catalog';
+export * from './baseline-analyzer';
+export { validateVitals, computeCoverage } from './vital-schema';
+export { SCENARIOS, SCENARIOS_META, type ScenarioId, type ScenarioMetadata } from './scenarios';
 
-/**
- * Evalúa las 6 variables fisiológicas y retorna el diagnóstico integral validado de A.R.E.S. Pulse.
- */
-export function evaluateHealth(rawVitals: unknown): HealthEvaluation {
+export function evaluateHealth(
+  rawVitals: unknown,
+  options: EvaluateHealthOptions = {}
+): HealthEvaluation {
+  const context = normalizeContext(options.context);
   const validation = validateVitals(rawVitals);
-  if (!validation.valid) {
-    const count = validation.errors.length;
-    const incompleteCard: ConclusionCard = {
-      id: 'insufficient_data',
-      status: STATUS.INSUFFICIENT_DATA,
-      label: STATUS_LABELS[STATUS.INSUFFICIENT_DATA],
-      title: 'Datos insuficientes o inválidos',
-      message: `No se puede emitir una evaluación saludable sin datos completos (${count} ${count === 1 ? 'error detectado' : 'errores detectados'}).`,
-      actionIcon: ACTIONS.REVIEW_INPUT.actionIcon,
-      actionText: ACTIONS.REVIEW_INPUT.actionText,
-      reasons: validation.errors,
-      reference: REFERENCES.MIND,
-    };
 
-    return {
-      valid: false,
-      algorithmVersion: ALGORITHM_VERSION,
-      overallStatus: STATUS.INSUFFICIENT_DATA,
-      overallLabel: STATUS_LABELS[STATUS.INSUFFICIENT_DATA],
-      readinessScore: null,
-      scoreBreakdown: [],
+  if (!validation.valid) {
+    return buildInvalidEvaluation({
+      vitals: validation.vitals,
+      context,
+      coverage: validation.coverage,
       fieldErrors: validation.fieldErrors,
       errors: validation.errors,
-      systems: {
-        mind: { ...incompleteCard, systemId: 'mind', systemName: 'Mente y Descanso', systemIcon: 'brain' },
-        heart: { ...incompleteCard, systemId: 'heart', systemName: 'Corazón y Circulación', systemIcon: 'heart' },
-        body: { ...incompleteCard, systemId: 'body', systemName: 'Cuerpo, Energía y Defensas', systemIcon: 'shield' },
-      },
-      crossConclusion: incompleteCard,
-      crossConclusionId: 'insufficient_data',
-      triggeredCrosses: [],
-      commsMessage: '',
-      vitals: validation.vitals,
-    };
+    });
   }
 
-  const vitals = validation.vitals as Required<import('./vital-specs').VitalValues>;
-  const systems = {
-    mind: evaluateMind(vitals),
-    heart: evaluateHeart(vitals),
-    body: evaluateBody(vitals),
+  const baselines = analyzePersonalBaselines(
+    validation.vitals,
+    context,
+    options.priorObservations ?? []
+  );
+  const mindOut = evaluateMind(validation.vitals, context, baselines, validation.coverage);
+  const heartOut = evaluateHeart(validation.vitals, context, baselines, validation.coverage);
+  const bodyOut = evaluateBody(validation.vitals, context, baselines, validation.coverage);
+
+  const systems: Record<SystemId, SystemEvaluation> = {
+    mind: mindOut.evaluation,
+    heart: heartOut.evaluation,
+    body: bodyOut.evaluation,
   };
 
-  const { crossConclusion, triggeredCrosses } = evaluateCrosses(vitals, systems);
-  const overallStatus = getWorstStatus([
-    systems.mind.status,
-    systems.heart.status,
-    systems.body.status,
-    crossConclusion.status,
-  ]);
+  const { crossConclusion, triggeredCrosses } = evaluateCrosses(
+    validation.vitals,
+    context,
+    systems
+  );
+  const overallStatus = getWorstStatus(systems, triggeredCrosses);
+  const scoreRes = computeWellnessIndex({
+    vitals: validation.vitals,
+    systems,
+    overallStatus,
+    triggeredCrosses,
+    coverage: validation.coverage,
+  });
 
-  const { readinessScore, scoreBreakdown } = computeWellnessIndex(vitals, overallStatus, crossConclusion);
-  const commsMessage = buildCommsMessage(vitals, overallStatus, readinessScore, crossConclusion);
+  const quality = assessQuality({
+    vitals: validation.vitals,
+    context,
+    coverage: validation.coverage,
+    overallStatus,
+  });
+
+  const ruleTraces: RuleAuditTrace[] = [
+    ...mindOut.traces,
+    ...heartOut.traces,
+    ...bodyOut.traces,
+    ...triggeredCrosses
+      .map((c) => c.ruleTrace)
+      .filter((t): t is RuleAuditTrace => Boolean(t)),
+  ];
+
+  const missingSystems = (Object.keys(systems) as SystemId[]).filter(
+    (k) => systems[k].status === STATUS.INSUFFICIENT_DATA
+  );
+
+  const clinicalRestrictions = deriveClinicalRestrictions(
+    validation.vitals,
+    context,
+    overallStatus
+  );
 
   return {
     valid: true,
     algorithmVersion: ALGORITHM_VERSION,
     overallStatus,
     overallLabel: STATUS_LABELS[overallStatus],
-    readinessScore,
-    scoreBreakdown,
+    readinessScore: scoreRes.score,
+    scoreConfidence: scoreRes.confidence,
+    scoreBreakdown: scoreRes.breakdown,
     fieldErrors: {},
     errors: [],
     systems,
-    crossConclusion: { ...crossConclusion, commsMessage },
-    crossConclusionId: crossConclusion.id || null,
+    crossConclusion,
+    crossConclusionId: crossConclusion.id ?? null,
     triggeredCrosses,
-    commsMessage,
-    vitals,
+    commsMessage: buildCommsMessage({
+      overallStatus,
+      readinessScore: scoreRes.score,
+      vitals: validation.vitals,
+      context,
+      coverage: validation.coverage,
+      quality,
+      crossConclusion,
+    }),
+    vitals: validation.vitals,
+    context,
+    coverage: validation.coverage,
+    quality,
+    baselines,
+    ruleTraces,
+    clinicalRestrictions,
+    missingSystems,
   };
 }

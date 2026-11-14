@@ -1,13 +1,22 @@
 import { z } from 'zod';
 import {
-  VITAL_SPECS,
-  type MoodValue,
-  type NumericVitalKey,
-  type PartialVitalValues,
-  type VitalValues,
-} from './vital-specs';
+  CoverageSummary,
+  NumericVitalKey,
+  SystemCoverage,
+  SystemKey,
+  VitalKey,
+} from './context-specs';
+import { PartialVitalValues, VITAL_SPECS } from './vital-specs';
 
-export const NUMERIC_FIELDS: readonly NumericVitalKey[] = [
+export interface VitalsValidationResult {
+  valid: boolean;
+  vitals: PartialVitalValues;
+  fieldErrors: Record<string, string>;
+  errors: string[];
+  coverage: CoverageSummary;
+}
+
+const NUMERIC_KEYS: NumericVitalKey[] = [
   'sleep_hours',
   'heart_rate',
   'bp_systolic',
@@ -16,118 +25,150 @@ export const NUMERIC_FIELDS: readonly NumericVitalKey[] = [
   'temperature',
 ];
 
-const VALID_MOODS = new Set<string>(VITAL_SPECS.mood.allowed);
+const ALL_KEYS: VitalKey[] = ['mood', ...NUMERIC_KEYS];
 
-const strictVitalsObjectSchema = z.object({
-  sleep_hours: z.number().min(VITAL_SPECS.sleep_hours.min).max(VITAL_SPECS.sleep_hours.max),
-  heart_rate: z.number().min(VITAL_SPECS.heart_rate.min).max(VITAL_SPECS.heart_rate.max),
-  bp_systolic: z.number().min(VITAL_SPECS.bp_systolic.min).max(VITAL_SPECS.bp_systolic.max),
-  bp_diastolic: z.number().min(VITAL_SPECS.bp_diastolic.min).max(VITAL_SPECS.bp_diastolic.max),
-  glucose: z.number().min(VITAL_SPECS.glucose.min).max(VITAL_SPECS.glucose.max),
-  temperature: z.number().min(VITAL_SPECS.temperature.min).max(VITAL_SPECS.temperature.max),
-  mood: z.enum(VITAL_SPECS.mood.allowed as [MoodValue, ...MoodValue[]]),
-});
+const SYSTEM_KEY_MAP: Record<SystemKey, VitalKey[]> = {
+  mind: ['mood', 'sleep_hours'],
+  heart: ['heart_rate', 'bp_systolic', 'bp_diastolic'],
+  body: ['temperature', 'glucose'],
+};
 
-export interface VitalValidationResult {
-  valid: boolean;
-  vitals: VitalValues | PartialVitalValues;
-  fieldErrors: Record<string, string>;
-  errors: string[];
+function isFiniteNum(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
 }
 
-function parseStrictNumericField(value: unknown): { present: boolean; valid: boolean; num: number | null } {
-  if (value === null || value === undefined || typeof value === 'boolean' || typeof value === 'object') {
-    return { present: value !== null && value !== undefined, valid: false, num: null };
-  }
-  if (typeof value === 'number') {
-    return Number.isFinite(value)
-      ? { present: true, valid: true, num: value }
-      : { present: true, valid: false, num: null };
-  }
-  if (typeof value === 'string') {
-    const trimmed = value.trim().replace(',', '.');
-    if (trimmed === '') return { present: false, valid: false, num: null };
-    if (!/^[+-]?(\d+(\.\d+)?|\.\d+)$/.test(trimmed)) return { present: true, valid: false, num: null };
-    const num = Number(trimmed);
-    return Number.isFinite(num)
-      ? { present: true, valid: true, num }
-      : { present: true, valid: false, num: null };
-  }
-  return { present: true, valid: false, num: null };
-}
+export function computeCoverage(vitals: PartialVitalValues): CoverageSummary {
+  const presentIndicators: VitalKey[] = [];
+  const missingIndicators: VitalKey[] = [];
 
-/**
- * Valida explícitamente los 7 campos de signos vitales sin sustituir valores ausentes o inválidos.
- */
-export function validateVitals(rawVitals: unknown): VitalValidationResult {
-  const fieldErrors: Record<string, string> = {};
-  const vitals: PartialVitalValues = {
-    sleep_hours: null,
-    mood: null,
-    heart_rate: null,
-    bp_systolic: null,
-    bp_diastolic: null,
-    glucose: null,
-    temperature: null,
+  for (const key of ALL_KEYS) {
+    if (key === 'mood') {
+      if (vitals.mood && VITAL_SPECS.mood.allowed.includes(vitals.mood)) {
+        presentIndicators.push('mood');
+      } else {
+        missingIndicators.push('mood');
+      }
+    } else if (isFiniteNum(vitals[key])) {
+      presentIndicators.push(key);
+    } else {
+      missingIndicators.push(key);
+    }
+  }
+
+  const systemCoverage = {} as Record<SystemKey, SystemCoverage>;
+  (['mind', 'heart', 'body'] as SystemKey[]).forEach((sys) => {
+    const keys = SYSTEM_KEY_MAP[sys];
+    const present = keys.filter((k) => presentIndicators.includes(k));
+    const missing = keys.filter((k) => !presentIndicators.includes(k));
+    systemCoverage[sys] = { present, missing, partial: present.length > 0 && missing.length > 0 };
+  });
+
+  const presentCount = presentIndicators.length;
+  const totalCount = ALL_KEYS.length;
+  return {
+    presentIndicators,
+    missingIndicators,
+    presentCount,
+    totalCount,
+    coveragePct: Math.round((presentCount / totalCount) * 100),
+    systemCoverage,
   };
+}
+
+export function validateVitals(
+  rawVitals: unknown,
+  options: { requireAll?: boolean } = {}
+): VitalsValidationResult {
+  const fieldErrors: Record<string, string> = {};
+  const errors: string[] = [];
+  const vitals: PartialVitalValues = {};
 
   if (!rawVitals || typeof rawVitals !== 'object' || Array.isArray(rawVitals)) {
-    for (const field of NUMERIC_FIELDS) {
-      const spec = VITAL_SPECS[field];
-      fieldErrors[field] = `${spec.label} es obligatorio (${spec.min}-${spec.max} ${spec.unit}).`;
-    }
-    fieldErrors.mood = 'Estado de ánimo es obligatorio.';
-    return { valid: false, vitals, fieldErrors, errors: Object.values(fieldErrors) };
+    const msg = 'No se proporcionaron indicadores fisiológicos válidos.';
+    return { valid: false, vitals, fieldErrors: {}, errors: [msg], coverage: computeCoverage(vitals) };
   }
 
-  const record = rawVitals as Record<string, unknown>;
-  for (const field of NUMERIC_FIELDS) {
-    const spec = VITAL_SPECS[field];
-    const parsed = parseStrictNumericField(record[field]);
-    if (!parsed.present) {
-      fieldErrors[field] = `${spec.label} es obligatorio.`;
+  const input = rawVitals as Record<string, unknown>;
+
+  // Mood validation (optional unless requireAll)
+  const rawMood = input.mood;
+  if (rawMood !== undefined && rawMood !== null && String(rawMood).trim() !== '') {
+    const m = String(rawMood).trim() as (typeof VITAL_SPECS.mood.allowed)[number];
+    if (!VITAL_SPECS.mood.allowed.includes(m)) {
+      const msg = `${VITAL_SPECS.mood.label}: opción inválida.`;
+      fieldErrors.mood = msg;
+      errors.push(msg);
+    } else {
+      vitals.mood = m;
+    }
+  } else if (options.requireAll) {
+    const msg = `${VITAL_SPECS.mood.label}: selecciona una opción.`;
+    fieldErrors.mood = msg;
+    errors.push(msg);
+  }
+
+  // Numeric vitals validation
+  for (const key of NUMERIC_KEYS) {
+    const spec = VITAL_SPECS[key];
+    const rawVal = input[key];
+    const isEmpty =
+      rawVal === undefined ||
+      rawVal === null ||
+      (typeof rawVal === 'string' && rawVal.trim() === '');
+
+    if (isEmpty) {
+      if (options.requireAll) {
+        const msg = `${spec.label}: campo requerido (${spec.min}–${spec.max} ${spec.unit}).`;
+        fieldErrors[key] = msg;
+        errors.push(msg);
+      }
       continue;
     }
-    if (!parsed.valid || parsed.num === null) {
-      fieldErrors[field] = `${spec.label} debe ser un número válido.`;
+
+    const num = typeof rawVal === 'number' ? rawVal : Number(String(rawVal).trim());
+    const schema = z
+      .number({ message: `${spec.label}: debe ser un número válido.` })
+      .finite(`${spec.label}: valor numérico inválido.`)
+      .min(spec.min, `${spec.label}: mínimo permitido ${spec.min} ${spec.unit}.`)
+      .max(spec.max, `${spec.label}: máximo permitido ${spec.max} ${spec.unit}.`);
+
+    const parsed = schema.safeParse(num);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? `${spec.label}: valor inválido.`;
+      fieldErrors[key] = msg;
+      errors.push(msg);
       continue;
     }
-    if (parsed.num < spec.min || parsed.num > spec.max) {
-      fieldErrors[field] = `${spec.label} (${parsed.num} ${spec.unit}) está fuera del rango permitido (${spec.min}-${spec.max} ${spec.unit}).`;
-      vitals[field] = parsed.num;
-      continue;
-    }
-    vitals[field] =
-      field === 'sleep_hours' || field === 'temperature'
-        ? Math.round(parsed.num * 10) / 10
-        : Math.round(parsed.num);
+    vitals[key] = parsed.data;
   }
 
-  const moodRaw = typeof record.mood === 'string' ? record.mood.trim().toLowerCase() : '';
-  if (!moodRaw) {
-    fieldErrors.mood = 'Estado de ánimo es obligatorio.';
-  } else if (!VALID_MOODS.has(moodRaw)) {
-    fieldErrors.mood = `Estado de ánimo '${String(record.mood)}' no es válido.`;
-  } else {
-    vitals.mood = moodRaw as MoodValue;
+  const hasSys = isFiniteNum(vitals.bp_systolic);
+  const hasDia = isFiniteNum(vitals.bp_diastolic);
+
+  if (hasSys && !hasDia && !fieldErrors.bp_diastolic) {
+    const msg = 'Si ingresas presión sistólica debes incluir la diastólica.';
+    fieldErrors.bp_diastolic = msg;
+    errors.push(msg);
+  } else if (!hasSys && hasDia && !fieldErrors.bp_systolic) {
+    const msg = 'Si ingresas presión diastólica debes incluir la sistólica.';
+    fieldErrors.bp_systolic = msg;
+    errors.push(msg);
+  } else if (hasSys && hasDia && vitals.bp_diastolic! > vitals.bp_systolic! - 10) {
+    const msg = 'La presión diastólica debe ser al menos 10 mmHg menor que la sistólica.';
+    fieldErrors.bp_diastolic = msg;
+    errors.push(msg);
   }
 
-  if (
-    !fieldErrors.bp_systolic &&
-    !fieldErrors.bp_diastolic &&
-    vitals.bp_systolic !== null &&
-    vitals.bp_diastolic !== null
-  ) {
-    if (vitals.bp_diastolic >= vitals.bp_systolic || vitals.bp_systolic - vitals.bp_diastolic < 10) {
-      fieldErrors.bp_diastolic =
-        'La presión diastólica (baja) debe ser al menos 10 mmHg menor que la presión sistólica (alta).';
-    }
+  const coverage = computeCoverage(vitals);
+  if (coverage.presentCount === 0 && errors.length === 0) {
+    errors.push('Ingresa al menos un indicador clínico válido para evaluar.');
   }
 
-  const parsedSchema = strictVitalsObjectSchema.safeParse(vitals);
-  if (Object.keys(fieldErrors).length === 0 && parsedSchema.success) {
-    return { valid: true, vitals: parsedSchema.data, fieldErrors: {}, errors: [] };
-  }
-
-  return { valid: false, vitals, fieldErrors, errors: Object.values(fieldErrors) };
+  return {
+    valid: errors.length === 0 && coverage.presentCount > 0,
+    vitals,
+    fieldErrors,
+    errors,
+    coverage,
+  };
 }

@@ -1,21 +1,47 @@
-import { ALGORITHM_VERSION, STATUS, type ConclusionCard, type HealthStatus, type VitalValues } from './vital-specs';
+import type { ObservationContext } from '../nasa/nasa-types';
+import type { CoverageSummary, QualityAssessment } from './context-specs';
+import {
+  ConclusionCard,
+  HealthStatus,
+  PartialVitalValues,
+  STATUS,
+  STATUS_LABELS,
+} from './vital-specs';
 
-/**
- * Genera el texto estructurado del reporte para copiar al portapapeles y registrar en bitácora local.
- */
-export function buildCommsMessage(
-  v: VitalValues,
-  overallStatus: HealthStatus,
-  readinessScore: number,
-  crossConclusion: ConclusionCard
-): string {
-  const statusTag =
-    overallStatus === STATUS.GREEN ? 'ÓPTIMO' : overallStatus === STATUS.YELLOW ? 'CUIDADO' : 'PELIGRO';
-  return (
-    `Reporte de Autoevaluación A.R.E.S. Pulse [${statusTag} - Índice ${readinessScore}/100 | v${ALGORITHM_VERSION}]: ` +
-    `${crossConclusion.title}. ` +
-    `Valores ingresados: Pulso ${v.heart_rate} BPM, Presión ${v.bp_systolic}/${v.bp_diastolic} mmHg, ` +
-    `Glucosa ${v.glucose} mg/dL, Temp ${v.temperature.toFixed(1)} °C, Sueño ${v.sleep_hours.toFixed(1)} h, Ánimo ${v.mood}. ` +
-    `Acción recomendada: ${crossConclusion.actionText}.`
-  );
+export function buildCommsMessage(opts: {
+  overallStatus: HealthStatus;
+  readinessScore: number | null;
+  vitals: PartialVitalValues;
+  context: ObservationContext;
+  coverage: CoverageSummary;
+  quality: QualityAssessment;
+  crossConclusion: ConclusionCard;
+}): string {
+  const { overallStatus, readinessScore, vitals, context, coverage, quality, crossConclusion } = opts;
+  const tag =
+    overallStatus === STATUS.RED ? 'PRIORIDAD ALTA'
+      : overallStatus === STATUS.YELLOW ? 'PRECAUCION'
+      : overallStatus === STATUS.GREEN ? 'NOMINAL'
+      : 'INCOMPLETO';
+
+  const scoreStr = readinessScore !== null ? `${readinessScore}/100` : 'No calculable (cobertura parcial)';
+  const vitalsParts = [
+    typeof vitals.heart_rate === 'number' ? `FC ${vitals.heart_rate}lpm` : null,
+    typeof vitals.bp_systolic === 'number' && typeof vitals.bp_diastolic === 'number'
+      ? `PA ${vitals.bp_systolic}/${vitals.bp_diastolic}mmHg` : null,
+    typeof vitals.temperature === 'number' ? `Temp ${vitals.temperature}C` : null,
+    typeof vitals.glucose === 'number' ? `Gluc ${vitals.glucose}mg/dL(${context.glucoseTiming})` : null,
+    typeof vitals.sleep_hours === 'number' ? `Sueno ${vitals.sleep_hours}h` : null,
+    vitals.mood ? `Animo ${vitals.mood}` : null,
+  ].filter(Boolean);
+
+  return [
+    `[A.R.E.S. BITACORA CLINICA · ${tag}] Estado: ${STATUS_LABELS[overallStatus]}`,
+    `Cobertura: ${coverage.presentCount}/${coverage.totalCount} indicadores (${coverage.coveragePct}%) | Calidad: ${quality.label}`,
+    `Contexto: ${context.activityState}, postura ${context.posture}${context.confirmedRepeated ? ', lectura confirmada' : ', toma unica'}${context.symptoms.length ? `, sintomas: ${context.symptoms.join(', ')}` : ''}`,
+    `Signos medidos: ${vitalsParts.length ? vitalsParts.join(' | ') : 'Ninguno'}`,
+    `Indice bienestar: ${scoreStr}`,
+    `Evaluacion: ${crossConclusion.title} — ${crossConclusion.message}`,
+    `Accion recomendada: ${crossConclusion.actionText}`,
+  ].join('\n');
 }
