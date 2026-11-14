@@ -3,12 +3,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test, { after, beforeEach } from 'node:test';
+import { NextRequest } from 'next/server';
 import { POST as loginPost } from '../src/app/api/auth/login/route';
 import { POST as registerPost } from '../src/app/api/auth/register/route';
 import { POST as checkinPost } from '../src/app/api/checkin/route';
 import { POST as evaluatePost } from '../src/app/api/evaluate/route';
 import { POST as missionCompletePost } from '../src/app/api/mission/complete/route';
 import { POST as missionResetPost } from '../src/app/api/mission/reset/route';
+import { GET as nasaDatasetsGet } from '../src/app/api/nasa-datasets/route';
 import { POST as scenarioPost } from '../src/app/api/scenario/[id]/route';
 import { GET as stateGet } from '../src/app/api/state/route';
 import { SCENARIOS } from '../src/domain/health';
@@ -43,7 +45,7 @@ function jsonReq(url: string, body: unknown, token?: string): Request {
   });
 }
 
-test('Autenticación segura: rechaza quickLogin, claves vacías y cabeceras x-user-id suplantadas', async () => {
+test('Autenticación segura e inicio limpio sin vitales ni historial falsos', async () => {
   const quickRes = await loginPost(jsonReq('http://localhost/api/auth/login', { username: 'elena', quickLogin: true }));
   assert.equal(quickRes.status, 400);
 
@@ -61,9 +63,19 @@ test('Autenticación segura: rechaza quickLogin, claves vacías y cabeceras x-us
 
   const stateRes = await stateGet(new Request('http://localhost/api/state', { headers: { Authorization: `Bearer ${okData.token}` } }));
   assert.equal(stateRes.status, 200);
+  const stateBody = (await stateRes.json()) as {
+    currentVitals: unknown;
+    history: unknown[];
+    observations: unknown[];
+    evaluation: { overallStatus: string };
+  };
+  assert.equal(stateBody.currentVitals, null);
+  assert.equal(stateBody.history.length, 0);
+  assert.equal(stateBody.observations.length, 0);
+  assert.equal(stateBody.evaluation.overallStatus, 'INSUFFICIENT_DATA');
 });
 
-test('Registro inicia sin vitales falsos, evalúa 422 y rechaza JSON malformado con 400', async () => {
+test('Registro limpio, evaluación parcial/contextual v3.0.0 y rechazo 400/422', async () => {
   const shortPass = await registerPost(
     jsonReq('http://localhost/api/auth/register', { name: 'Ana', username: 'ana', password: '123' })
   );
@@ -83,9 +95,32 @@ test('Registro inicia sin vitales falsos, evalúa 422 y rechaza JSON malformado 
 
   const invalidVitals = await evaluatePost(jsonReq('http://localhost/api/evaluate', { heart_rate: 'abc' }));
   assert.equal(invalidVitals.status, 422);
+
+  // Evaluación parcial con contexto ortostático Tilt
+  const partialRes = await evaluatePost(
+    jsonReq('http://localhost/api/evaluate', {
+      vitals: { heart_rate: 112 },
+      context: { activityState: 'orthostatic_tilt', posture: 'standing_tilt' },
+    })
+  );
+  assert.equal(partialRes.status, 200);
+  const partialBody = (await partialRes.json()) as {
+    valid: boolean;
+    evaluation: {
+      algorithmVersion: string;
+      overallStatus: string;
+      coverage: { presentCount: number };
+      ruleTraces: Array<{ ruleId: string }>;
+    };
+  };
+  assert.equal(partialBody.valid, true);
+  assert.equal(partialBody.evaluation.algorithmVersion, '3.0.0');
+  assert.equal(partialBody.evaluation.overallStatus, 'YELLOW');
+  assert.equal(partialBody.evaluation.coverage.presentCount, 1);
+  assert.ok(partialBody.evaluation.ruleTraces.some((r) => r.ruleId === 'HEART_HR_ORTHOSTATIC_TILT'));
 });
 
-test('Check-in: bloquea simulaciones, deduplica por clientSubmissionId, consolida fecha y protege XP diario', async () => {
+test('Check-in: bloquea simulaciones, preserva observaciones intra-día y restringe ejercicio en RED', async () => {
   const loginRes = await loginPost(jsonReq('http://localhost/api/auth/login', { identifier: 'elena', password: '123' }));
   const { token } = (await loginRes.json()) as { token: string };
 
@@ -117,10 +152,41 @@ test('Check-in: bloquea simulaciones, deduplica por clientSubmissionId, consolid
   const updateSameDay = await checkinPost(
     jsonReq('http://localhost/api/checkin', { vitals: SCENARIOS.nominal, clientSubmissionId: 'sub-2', dateKey: '2026-11-15' }, token)
   );
-  const updateData = (await updateSameDay.json()) as { consolidated: boolean; entry: { updatesCount: number } };
+  const updateData = (await updateSameDay.json()) as {
+    consolidated: boolean;
+    entry: { updatesCount: number };
+    state: { observations: unknown[]; history: unknown[] };
+  };
   assert.equal(updateData.consolidated, true);
   assert.equal(updateData.entry.updatesCount, 2);
+  assert.equal(updateData.state.history.length, 1);
+  assert.equal(updateData.state.observations.length, 2);
 
+  // Check-in crítico real -> ejercicio restringido clínicamente (HTTP 400)
+  const criticalSave = await checkinPost(
+    jsonReq(
+      'http://localhost/api/checkin',
+      {
+        vitals: SCENARIOS.critical,
+        context: { activityState: 'rest' },
+        clientSubmissionId: 'sub-3-red',
+        dateKey: '2026-11-16',
+      },
+      token
+    )
+  );
+  assert.equal(criticalSave.status, 200);
+  const criticalBody = (await criticalSave.json()) as {
+    evaluation: { clinicalRestrictions: { restrictStrenuousExercise: boolean } };
+  };
+  assert.equal(criticalBody.evaluation.clinicalRestrictions.restrictStrenuousExercise, true);
+
+  const blockedEx = await missionCompletePost(
+    jsonReq('http://localhost/api/mission/complete', { missionId: 'exercise' }, token)
+  );
+  assert.equal(blockedEx.status, 400);
+
+  // Hidratación sí permitida y protege XP diario frente a reset
   const m1 = await missionCompletePost(jsonReq('http://localhost/api/mission/complete', { missionId: 'hydrate' }, token));
   const m1Data = (await m1.json()) as { awardedXp: number; state: { gamification: { xp: number } } };
   assert.equal(m1Data.awardedXp, 25);
@@ -130,4 +196,31 @@ test('Check-in: bloquea simulaciones, deduplica por clientSubmissionId, consolid
   const m2Data = (await m2.json()) as { awardedXp: number; alreadyAwardedToday: boolean };
   assert.equal(m2Data.awardedXp, 0);
   assert.equal(m2Data.alreadyAwardedToday, true);
+});
+
+test('API /api/nasa-datasets entrega auditoría real y timeline de sujeto oficial', async () => {
+  const benchRes = await nasaDatasetsGet(new NextRequest('http://localhost/api/nasa-datasets?view=benchmark'));
+  assert.equal(benchRes.status, 200);
+  const benchJson = (await benchRes.json()) as {
+    inventory: { datasets: unknown[]; totalValidObservations: number };
+    benchmark: { v2CoverageRatePct: number; v3CoverageRatePct: number; missionVsClinicalConflictsV3: number };
+  };
+  assert.equal(benchJson.inventory.datasets.length, 6);
+  assert.ok(benchJson.inventory.totalValidObservations > 3900);
+  assert.equal(benchJson.benchmark.v2CoverageRatePct, 0);
+  assert.equal(benchJson.benchmark.v3CoverageRatePct, 100);
+  assert.equal(benchJson.benchmark.missionVsClinicalConflictsV3, 0);
+
+  const subjRes = await nasaDatasetsGet(new NextRequest('http://localhost/api/nasa-datasets?subjectId=C3-6043'));
+  assert.equal(subjRes.status, 200);
+  const subjJson = (await subjRes.json()) as {
+    subject: { subjectId: string; vitalsCount: number };
+    points: unknown[];
+    v2EvaluablePoints: number;
+    v3EvaluablePoints: number;
+  };
+  assert.equal(subjJson.subject.subjectId, 'C3-6043');
+  assert.ok(subjJson.points.length > 50);
+  assert.equal(subjJson.v2EvaluablePoints, 0);
+  assert.equal(subjJson.v3EvaluablePoints, subjJson.subject.vitalsCount);
 });
