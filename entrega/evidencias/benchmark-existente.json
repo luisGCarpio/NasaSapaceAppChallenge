@@ -1,0 +1,9 @@
+{
+  "capturedAt": "2026-11-14T15:15:21.6489324-05:00",
+  "request": "GET /api/nasa-datasets?view=benchmark",
+  "httpStatus": 500,
+  "response": {
+    "error": "Cannot read properties of undefined (reading 'restrictStrenuousExercise')"
+  },
+  "note": "Observed on the running development server. Source files may be changing concurrently; recheck after code fixes."
+}

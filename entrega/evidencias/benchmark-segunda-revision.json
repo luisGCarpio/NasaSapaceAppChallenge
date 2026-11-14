@@ -1,0 +1,450 @@
+{
+  "capturedAt": "2026-11-14T15:23:41.0894753-05:00",
+  "request": "GET /api/nasa-datasets?view=benchmark",
+  "httpStatus": 200,
+  "response": {
+    "inventory": {
+      "generatedAt": "2026-11-14T20:06:55.916Z",
+      "generator": "scripts/ingest-nasa-datasets.ts",
+      "policy": "100% observaciones reales de NASA OSDR y NASA NLSP; cero imputacion de indicadores ausentes ni mezcla entre estudios.",
+      "totalFilesProcessed": 159,
+      "totalRawRowsScanned": 17653,
+      "totalValidObservations": 3965,
+      "totalSkippedOrDefective": 167,
+      "datasets": [
+        {
+          "studyId": "OSD-575",
+          "officialId": "OSD-575",
+          "title": "SpaceX Inspiration4 Comprehensive Metabolic Panel (LSDS-8)",
+          "sourceSystem": "NASA OSDR",
+          "sourceUrl": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-575",
+          "population": "4 astronautas comerciales SpaceX Inspiration4 (3 días órbita LEO)",
+          "filesProcessed": 1,
+          "rawRowsScanned": 28,
+          "validObservationsExtracted": 28,
+          "skippedOrDefectiveRows": 0,
+          "uniqueSubjects": 4,
+          "subjectIds": [
+            "I4-C001",
+            "I4-C002",
+            "I4-C003",
+            "I4-C004"
+          ],
+          "availableVitals": [
+            "glucose"
+          ],
+          "timeAxis": "L-92, L-44, L-3 pre-vuelo / R+1, R+45, R+82, R+194 post-vuelo",
+          "knownDefectsAndNotes": [
+            "Sin hora exacta de ayuno en columna Sample Name; valores R+45 incluyen glucemias bajas reales (36 y 44 mg/dL) que deben auditarse según contexto preanalítico."
+          ],
+          "sha256Samples": [
+            {
+              "fileName": "LSDS-8_CMP.csv",
+              "sha256": "1f8c36196c4f3e2b927668bc01cb0b227d9281797df4a003d579e349abc47320",
+              "bytes": 8503
+            }
+          ]
+        },
+        {
+          "studyId": "CRF_C3_VITALS",
+          "officialId": "7153409b-d8a3-5a23-b667-9df8a182dfdc",
+          "title": "UTMB Bedrest Campaign 3 — Daily Vitals (CRF)",
+          "sourceSystem": "NASA NLSP",
+          "sourceUrl": "https://nlsp.nasa.gov/api/v1/data/datasets/7153409b-d8a3-5a23-b667-9df8a182dfdc/full",
+          "population": "Sujetos humanos adultos en reposo prolongado 6° HDT (NASA JSC / UTMB)",
+          "filesProcessed": 23,
+          "rawRowsScanned": 2451,
+          "validObservationsExtracted": 2450,
+          "skippedOrDefectiveRows": 1,
+          "uniqueSubjects": 23,
+          "subjectIds": [
+            "C3-224",
+            "C3-3985",
+            "C3-446",
+            "C3-5165",
+            "C3-5580",
+            "C3-5788",
+            "C3-5814",
+            "C3-5907",
+            "C3-6043",
+            "C3-6607",
+            "C3-6858",
+            "C3-7352",
+            "C3-7772",
+            "C3-7961",
+            "C3-7984",
+            "C3-8615",
+            "C3-8779",
+            "C3-8881",
+            "C3-9032",
+            "C3-9139",
+            "C3-9314",
+            "C3-9485",
+            "C3-992"
+          ],
+          "availableVitals": [
+            "heart_rate",
+            "bp_systolic",
+            "bp_diastolic",
+            "temperature"
+          ],
+          "timeAxis": "PRE_TEST / IN_TEST (BR_Day) / POST_TEST con hora clínica",
+          "knownDefectsAndNotes": [
+            "Cabeceras heterogéneas entre sujetos (SysBP vs Blood Pressure, systolic) normalizadas al ingestar; glucosa, sueño y ánimo no se miden en esta tabla y permanecen ausentes sin imputación."
+          ],
+          "sha256Samples": [
+            {
+              "fileName": "CRF_Campaign_3_Daily_Vitals_C3D_8615.csv",
+              "sha256": "53b9432cb17a116cf41dbda83f413e8c511570e8427d50beb2ab73cc48a80a11",
+              "bytes": 8847
+            },
+            {
+              "fileName": "CRF_Campaign_3_Daily_Vitals_C3G_6858.csv",
+              "sha256": "46a2e088ae6446e92b5e326150bf8965bef5b2e68c2ae277c000aa9d3dfa4476",
+              "bytes": 7834
+            },
+            {
+              "fileName": "CRF_Campaign_3_Daily_Vitals_C3D_8881.csv",
+              "sha256": "4dd76d73d7f07230dfa732fa5424df67ff3fbcbbc866f0aee6c2f535b7f89bad",
+              "bytes": 10092
+            }
+          ]
+        },
+        {
+          "studyId": "MR001G_C3_TILT",
+          "officialId": "f4a134da-7131-55f8-a0a1-e67d56509432",
+          "title": "UTMB Bedrest Campaign 3 — Orthostatic Tilt Test (MR001G)",
+          "sourceSystem": "NASA NLSP",
+          "sourceUrl": "https://nlsp.nasa.gov/api/v1/data/datasets/f4a134da-7131-55f8-a0a1-e67d56509432/full",
+          "population": "Subcohorte UTMB Campaign 3 evaluada con prueba ortostática Supine vs Tilt",
+          "filesProcessed": 80,
+          "rawRowsScanned": 1868,
+          "validObservationsExtracted": 156,
+          "skippedOrDefectiveRows": 149,
+          "uniqueSubjects": 26,
+          "subjectIds": [
+            "C3-224",
+            "C3-3768",
+            "C3-3985",
+            "C3-4023",
+            "C3-5165",
+            "C3-5580",
+            "C3-5788",
+            "C3-5814",
+            "C3-5907",
+            "C3-6043",
+            "C3-6345",
+            "C3-6607",
+            "C3-6858",
+            "C3-7127",
+            "C3-7352",
+            "C3-7772",
+            "C3-7961",
+            "C3-7984",
+            "C3-8615",
+            "C3-8779",
+            "C3-8881",
+            "C3-9032",
+            "C3-9139",
+            "C3-9314",
+            "C3-9485",
+            "C3-992"
+          ],
+          "availableVitals": [
+            "heart_rate",
+            "bp_systolic",
+            "bp_diastolic"
+          ],
+          "timeAxis": "PRE_TEST / IN_TEST / POST_TEST por etapa Supine y Standing Tilt",
+          "knownDefectsAndNotes": [
+            "Se prefirió Campaign 3 sobre Campaign 1 porque MR001G_Campaign_1_Tilt_HR.csv en NLSP contiene columna DBP repetida en lugar de HR. Se extrae el último minuto estable en Supine y el minuto pico en Tilt por sesión."
+          ],
+          "sha256Samples": [
+            {
+              "fileName": "MR001G_Campaign_3_Tilt_C3D_5165_BR+3.csv",
+              "sha256": "c41c3f0b45ddf451479b4db7ff5cd86f379cc31e1f096f75fda8bad78caed118",
+              "bytes": 3145
+            },
+            {
+              "fileName": "MR001G_Campaign_3_Tilt_C3G_5814_BR+0.csv",
+              "sha256": "b48811aa681d0393c66b3c9fe8ff7608f31da759bc97d7749a9847a33ca7ec8c",
+              "bytes": 1159
+            },
+            {
+              "fileName": "MR001G_Campaign_3_Tilt_C3E_6043_BR-5.csv",
+              "sha256": "8cdbd5033d9d718b5d3a5fcfaafd1a1e2041c9abaefb5b8324467580b1ebdefd",
+              "bytes": 3208
+            }
+          ]
+        },
+        {
+          "studyId": "MR010G_C3_LAB",
+          "officialId": "a36f6361-3492-5590-a675-a0257edf69ac",
+          "title": "UTMB Bedrest Campaign 3 — Clinical Laboratory Glucose (MR010G)",
+          "sourceSystem": "NASA NLSP",
+          "sourceUrl": "https://nlsp.nasa.gov/api/v1/data/datasets/a36f6361-3492-5590-a675-a0257edf69ac/full",
+          "population": "Sujetos UTMB Campaign 3 con química sanguínea e i-STAT",
+          "filesProcessed": 31,
+          "rawRowsScanned": 12178,
+          "validObservationsExtracted": 220,
+          "skippedOrDefectiveRows": 0,
+          "uniqueSubjects": 31,
+          "subjectIds": [
+            "C3-224",
+            "C3-3768",
+            "C3-3985",
+            "C3-4023",
+            "C3-5165",
+            "C3-5580",
+            "C3-5683",
+            "C3-5705",
+            "C3-5788",
+            "C3-5814",
+            "C3-5907",
+            "C3-6043",
+            "C3-6345",
+            "C3-6607",
+            "C3-6858",
+            "C3-7127",
+            "C3-7352",
+            "C3-7772",
+            "C3-7961",
+            "C3-7984",
+            "C3-8454",
+            "C3-8615",
+            "C3-8779",
+            "C3-8881",
+            "C3-9016",
+            "C3-9032",
+            "C3-9139",
+            "C3-9314",
+            "C3-9485",
+            "C3-992",
+            "C3-9947"
+          ],
+          "availableVitals": [
+            "glucose"
+          ],
+          "timeAxis": "PRE_TEST / IN_TEST / POST_TEST por fecha y fase clínica",
+          "knownDefectsAndNotes": [
+            "Excluye explícitamente Glucose de Urinalysis para evitar falsos ceros/cadenas \"Negative\"; preserva calificadores \"(L)\"/\"(H)\" en rawFlags."
+          ],
+          "sha256Samples": [
+            {
+              "fileName": "MR010G_Campaign_3_Clinical_Laboratory_Assessment_C3G_9032.csv",
+              "sha256": "e01a469fdb39e31c89827e29375851d29710541572f847455d278f8e9475bb9e",
+              "bytes": 44432
+            },
+            {
+              "fileName": "MR010G_Campaign_3_Clinical_Laboratory_Assessment_C3G_5580.csv",
+              "sha256": "03bd6a129fdcaa8d1d645e110babb43bbe2722281a44bbb3d6f3c45455c17abb",
+              "bytes": 45865
+            },
+            {
+              "fileName": "MR010G_Campaign_3_Clinical_Laboratory_Assessment_C3F_9016.csv",
+              "sha256": "d803bc086d5c61b605194413f5e8918a4aa5a8cbe859f7d6b8aa7acdc526e413",
+              "bytes": 33925
+            }
+          ]
+        },
+        {
+          "studyId": "CRF_C3_SYMPTOMS",
+          "officialId": "625b7cf3-4cef-5983-8ce1-2e33ec807168",
+          "title": "UTMB Bedrest Campaign 3 — Symptom Complaints (CRF)",
+          "sourceSystem": "NASA NLSP",
+          "sourceUrl": "https://nlsp.nasa.gov/api/v1/data/datasets/625b7cf3-4cef-5983-8ce1-2e33ec807168/full",
+          "population": "Eventos sintomáticos reales reportados durante UTMB Campaign 3",
+          "filesProcessed": 23,
+          "rawRowsScanned": 921,
+          "validObservationsExtracted": 921,
+          "skippedOrDefectiveRows": 0,
+          "uniqueSubjects": 23,
+          "subjectIds": [
+            "C3-224",
+            "C3-3985",
+            "C3-446",
+            "C3-5165",
+            "C3-5580",
+            "C3-5788",
+            "C3-5814",
+            "C3-5907",
+            "C3-6043",
+            "C3-6607",
+            "C3-6858",
+            "C3-7352",
+            "C3-7772",
+            "C3-7961",
+            "C3-7984",
+            "C3-8615",
+            "C3-8779",
+            "C3-8881",
+            "C3-9032",
+            "C3-9139",
+            "C3-9314",
+            "C3-9485",
+            "C3-992"
+          ],
+          "availableVitals": [],
+          "timeAxis": "PRE_TEST / IN_TEST / POST_TEST",
+          "knownDefectsAndNotes": [
+            "Tabla de síntomas clínicos sin signos vitales numéricos; útil como contexto clínico real sin inventar vitales."
+          ],
+          "sha256Samples": [
+            {
+              "fileName": "CRF_Campaign_3_Symptom_Complaint_C3D_8615.csv",
+              "sha256": "8f49199f3d036e52c27fa06e0fe4c570a2210ff311795e3e2efbb00ed0edda20",
+              "bytes": 12709
+            },
+            {
+              "fileName": "CRF_Campaign_3_Symptom_Complaint_C3G_5580.csv",
+              "sha256": "5fc8fa8f5280f60dfd332a496b9fd3d44476b734fe933d5605ddc269778d03f2",
+              "bytes": 6620
+            },
+            {
+              "fileName": "CRF_Campaign_3_Symptom_Complaint_C3G_5814.csv",
+              "sha256": "eabc4edfcffdf4574f5670fab7b4c95f4c9ec02726d2885df51caa84ca10cd54",
+              "bytes": 35483
+            }
+          ]
+        },
+        {
+          "studyId": "BRSMACT_C1_SLEEP",
+          "officialId": "e26501eb-7d7a-5012-8c8e-c5bdb3eecaf6",
+          "title": "UTMB Bedrest Campaign 1 — Sleep Actigraphy (BRSMAct)",
+          "sourceSystem": "NASA NLSP",
+          "sourceUrl": "https://nlsp.nasa.gov/api/v1/data/datasets/e26501eb-7d7a-5012-8c8e-c5bdb3eecaf6/full",
+          "population": "Sujetos adultos monitoreados con actigrafía objetiva (UTMB Campaign 1)",
+          "filesProcessed": 1,
+          "rawRowsScanned": 207,
+          "validObservationsExtracted": 190,
+          "skippedOrDefectiveRows": 17,
+          "uniqueSubjects": 3,
+          "subjectIds": [
+            "C1G0001",
+            "C1G0002",
+            "C1G0003"
+          ],
+          "availableVitals": [
+            "sleep_hours"
+          ],
+          "timeAxis": "PRE_TEST / BEDREST / POST_TEST",
+          "knownDefectsAndNotes": [
+            "Se ingesta el archivo normalizado BRSMACT_Campagin_1_Actigraphy.csv excluyendo Query_Result duplicado y ReadMe."
+          ],
+          "sha256Samples": [
+            {
+              "fileName": "BRSMACT_Campagin_1_Actigraphy.csv",
+              "sha256": "2fa3efeb9e6388e8de50f4e2eefc9e6de8740993f1c27ab7ef3282e59398923b",
+              "bytes": 11679
+            }
+          ]
+        }
+      ]
+    },
+    "benchmark": {
+      "engineVersion": "3.0.0",
+      "totalObservationsEvaluated": 3965,
+      "withQuantitativeVitals": 3044,
+      "qualitativeSymptomsOnly": 921,
+      "v2EvaluableCount": 0,
+      "v2CoverageRatePct": 0,
+      "v3EvaluableCount": 3044,
+      "v3CoverageRatePct": 100,
+      "v3AlertsDetected": {
+        "red": 59,
+        "yellow": 805,
+        "green": 2180,
+        "insufficientData": 921
+      },
+      "tiltWithHr100PlusTotal": 70,
+      "tiltClassifiedAsOrthostaticNotRestPanic": 64,
+      "unknownGlucose100to139Count": 3,
+      "unknownGlucoseFlaggedContextualConfirmation": 3,
+      "observationsWithExerciseRestriction": 110,
+      "missionVsClinicalConflictsV2": 110,
+      "missionVsClinicalConflictsV3": 0,
+      "sampleRecoveredAlerts": [
+        {
+          "observationId": "OSD-575:I4-C002:R+45:12",
+          "subjectId": "I4-C002",
+          "studyId": "OSD-575",
+          "relativeLabel": "R+45",
+          "v2Status": "INSUFFICIENT_DATA (bloqueado por falta de 7/7)",
+          "v3Status": "RED",
+          "v3Title": "Alerta metabólica / térmica prioritaria",
+          "baselineText": "Base personal provisional (n=4): mediana 75, IQR 10, delta -31."
+        },
+        {
+          "observationId": "OSD-575:I4-C003:R+45:19",
+          "subjectId": "I4-C003",
+          "studyId": "OSD-575",
+          "relativeLabel": "R+45",
+          "v2Status": "INSUFFICIENT_DATA (bloqueado por falta de 7/7)",
+          "v3Status": "RED",
+          "v3Title": "Alerta metabólica / térmica prioritaria",
+          "baselineText": "Base personal provisional (n=4): mediana 76, IQR 21.5, delta -40."
+        },
+        {
+          "observationId": "OSD-575:I4-C004:R+45:26",
+          "subjectId": "I4-C004",
+          "studyId": "OSD-575",
+          "relativeLabel": "R+45",
+          "v2Status": "INSUFFICIENT_DATA (bloqueado por falta de 7/7)",
+          "v3Status": "RED",
+          "v3Title": "Alerta metabólica / térmica prioritaria",
+          "baselineText": "Base personal provisional (n=4): mediana 90, IQR 29, delta -47."
+        },
+        {
+          "observationId": "CRF_C3_VITALS:C3-224:PRE_TEST:-2:9",
+          "subjectId": "C3-224",
+          "studyId": "CRF_C3_VITALS",
+          "relativeLabel": "PRE_TEST Day -2 (6:00)",
+          "v2Status": "INSUFFICIENT_DATA (bloqueado por falta de 7/7)",
+          "v3Status": "RED",
+          "v3Title": "Alerta cardiovascular de prioridad alta",
+          "baselineText": "Base personal estable (n=10): mediana 69.5, IQR 10, delta -0.5."
+        },
+        {
+          "observationId": "MR001G_C3_TILT:C3-224:IN_TEST:61:Tilt",
+          "subjectId": "C3-224",
+          "studyId": "MR001G_C3_TILT",
+          "relativeLabel": "IN_TEST BR 61 Tilt (Min 21)",
+          "v2Status": "INSUFFICIENT_DATA (bloqueado por falta de 7/7)",
+          "v3Status": "RED",
+          "v3Title": "Alerta cardiovascular de prioridad alta",
+          "baselineText": "Base personal estable (n=74): mediana 69, IQR 11, delta +97."
+        },
+        {
+          "observationId": "CRF_C3_VITALS:C3-224:IN_TEST:72:82",
+          "subjectId": "C3-224",
+          "studyId": "CRF_C3_VITALS",
+          "relativeLabel": "IN_TEST Day 72 (6:00)",
+          "v2Status": "INSUFFICIENT_DATA (bloqueado por falta de 7/7)",
+          "v3Status": "RED",
+          "v3Title": "Alerta cardiovascular de prioridad alta",
+          "baselineText": "Base personal estable (n=82): mediana 69.5, IQR 11, delta -1.5."
+        },
+        {
+          "observationId": "MR001G_C3_TILT:C3-224:POST_TEST:3:Tilt",
+          "subjectId": "C3-224",
+          "studyId": "MR001G_C3_TILT",
+          "relativeLabel": "POST_TEST BR 3 Tilt (Min 23)",
+          "v2Status": "INSUFFICIENT_DATA (bloqueado por falta de 7/7)",
+          "v3Status": "RED",
+          "v3Title": "Alerta cardiovascular de prioridad alta",
+          "baselineText": "Base personal estable (n=108): mediana 69.5, IQR 11.5, delta +61.5."
+        },
+        {
+          "observationId": "MR001G_C3_TILT:C3-3768:PRE_TEST:-6:Tilt",
+          "subjectId": "C3-3768",
+          "studyId": "MR001G_C3_TILT",
+          "relativeLabel": "PRE_TEST BR -6 Tilt (Min 16)",
+          "v2Status": "INSUFFICIENT_DATA (bloqueado por falta de 7/7)",
+          "v3Status": "RED",
+          "v3Title": "Estrés ortostático confirmado en prueba Tilt",
+          "baselineText": "Base personal inicial (n=1): mediana 58, IQR 0, delta +44."
+        }
+      ]
+    }
+  }
+}
