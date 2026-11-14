@@ -1,33 +1,46 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import type { HealthEvaluation, VITAL_SPECS, VitalValues } from '@/domain/health';
+import type {
+  HealthEvaluation,
+  PartialVitalValues,
+  VITAL_SPECS,
+  VitalValues,
+} from '@/domain/health';
+import type { ObservationContext } from '@/domain/nasa/nasa-types';
 import type { CheckinDraftFields } from '@/hooks/useCheckinDraft';
 import { AlertBanner } from '../ui/AlertBanner';
 import { NumericField } from '../ui/NumericField';
 import { SectionCard } from '../ui/SectionCard';
 import { BloodPressureGroup } from './BloodPressureGroup';
+import { CheckinContextPanel } from './CheckinContextPanel';
 import { MoodSelector } from './MoodSelector';
 
 export function CheckinForm({
   draft,
+  context,
   specs,
   evaluation,
   baselineVitals,
   saving,
   feedback,
   onChangeField,
+  onChangeContext,
   onLoadBaseline,
+  onClear,
   onSubmit,
 }: {
   draft: CheckinDraftFields;
+  context: ObservationContext;
   specs: typeof VITAL_SPECS;
   evaluation: HealthEvaluation;
-  baselineVitals: VitalValues | null;
+  baselineVitals: VitalValues | PartialVitalValues | null;
   saving: boolean;
   feedback: { type: 'success' | 'error'; message: string } | null;
   onChangeField: <K extends keyof CheckinDraftFields>(key: K, val: CheckinDraftFields[K]) => void;
-  onLoadBaseline: (vitals: VitalValues) => void;
+  onChangeContext: <K extends keyof ObservationContext>(key: K, val: ObservationContext[K]) => void;
+  onLoadBaseline: (vitals: VitalValues | PartialVitalValues) => void;
+  onClear: () => void;
   onSubmit: () => Promise<boolean>;
 }) {
   function handleFormSubmit(event: FormEvent) {
@@ -37,18 +50,27 @@ export function CheckinForm({
 
   return (
     <SectionCard
-      title="Registro de Chequeo Diario"
-      subtitle="Ingresa tus 6 indicadores fisiológicos de forma manual"
+      title="Registro de Observación Clínica"
+      subtitle="Permite chequeos completos o parciales (ej. solo FC, PA y Temp); los campos vacíos no se inventan"
       action={
-        baselineVitals ? (
+        <div className="flex flex-wrap gap-2">
+          {baselineVitals ? (
+            <button
+              type="button"
+              onClick={() => onLoadBaseline(baselineVitals)}
+              className="rounded-xl border border-[#1E2E4E] bg-[#060A12] px-3 py-1.5 text-xs font-medium text-sky-300 hover:border-[#38BDF8]"
+            >
+              Cargar última toma
+            </button>
+          ) : null}
           <button
             type="button"
-            onClick={() => onLoadBaseline(baselineVitals)}
-            className="rounded-xl border border-[#1E2E4E] bg-[#060A12] px-3 py-1.5 text-xs font-medium text-sky-300 hover:border-[#38BDF8]"
+            onClick={onClear}
+            className="rounded-xl border border-[#1E2E4E] bg-[#060A12] px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white"
           >
-            Cargar último registro
+            Limpiar
           </button>
-        ) : null
+        </div>
       }
     >
       <form onSubmit={handleFormSubmit} noValidate className="space-y-4">
@@ -124,6 +146,8 @@ export function CheckinForm({
           />
         </div>
 
+        <CheckinContextPanel context={context} onChange={onChangeContext} />
+
         {feedback ? (
           <AlertBanner
             tone={feedback.type === 'success' ? 'success' : 'danger'}
@@ -131,13 +155,16 @@ export function CheckinForm({
           />
         ) : null}
 
-        <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <span className="font-mono text-xs text-slate-400">
+            Cobertura actual: {evaluation.coverage.presentCount}/{evaluation.coverage.totalCount} ({evaluation.coverage.coveragePct}%)
+          </span>
           <button
             type="submit"
             disabled={saving}
             className="rounded-xl bg-[#0B3D91] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#105BD8] disabled:opacity-50 transition-colors"
           >
-            {saving ? 'Evaluando y guardando...' : 'Guardar chequeo diario'}
+            {saving ? 'Evaluando y guardando...' : 'Guardar observación en bitácora'}
           </button>
         </div>
       </form>

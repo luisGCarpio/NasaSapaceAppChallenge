@@ -1,5 +1,17 @@
-import type { HealthEvaluation, HealthStatus, ScenarioId, VitalValues } from '@/domain/health';
+import type {
+  HealthEvaluation,
+  HealthStatus,
+  PartialVitalValues,
+  ScenarioId,
+  VitalValues,
+} from '@/domain/health';
+import type { BenchmarkMetrics } from '@/domain/nasa/benchmark-runner';
+import type { NasaAuditInventory, ObservationContext } from '@/domain/nasa/nasa-types';
 import type { CheckinEntry, CommsLogEntry, PublicUser, PublicUserState } from '@/server/storage/types';
+import type {
+  NasaSubjectSummary,
+  NasaSubjectTimelineResult,
+} from '@/server/repositories/nasa-datasets-repo';
 
 export class ApiError extends Error {
   status: number;
@@ -62,19 +74,23 @@ export function apiLogout(): Promise<{ ok: boolean }> {
   return requestJson('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
 }
 
-export function apiEvaluate(vitals: Record<string, unknown>): Promise<{
+export function apiEvaluate(
+  vitals: Record<string, unknown>,
+  context?: Partial<ObservationContext>
+): Promise<{
   valid: boolean;
-  vitals: VitalValues;
+  vitals: PartialVitalValues;
   evaluation: HealthEvaluation;
 }> {
   return requestJson('/api/evaluate', {
     method: 'POST',
-    body: JSON.stringify({ vitals }),
+    body: JSON.stringify({ vitals, context }),
   });
 }
 
 export function apiSaveCheckin(payload: {
   vitals: Record<string, unknown>;
+  context?: Partial<ObservationContext>;
   clientSubmissionId: string;
 }): Promise<{
   consolidated: boolean;
@@ -93,12 +109,30 @@ export function apiRunScenario(scenarioId: ScenarioId): Promise<{
   id: ScenarioId;
   isSimulation: true;
   vitals: VitalValues;
+  context?: ObservationContext;
   evaluation: HealthEvaluation;
 }> {
   return requestJson(`/api/scenario/${scenarioId}`, {
     method: 'POST',
     body: JSON.stringify({}),
   });
+}
+
+export function apiGetNasaCatalog(): Promise<{
+  inventory: NasaAuditInventory;
+  benchmark: BenchmarkMetrics;
+  subjects: NasaSubjectSummary[];
+}> {
+  return requestJson('/api/nasa-datasets', { method: 'GET' });
+}
+
+export function apiGetNasaSubjectTimeline(
+  subjectId: string,
+  studyId?: string
+): Promise<NasaSubjectTimelineResult> {
+  const qs = new URLSearchParams({ subjectId });
+  if (studyId) qs.set('studyId', studyId);
+  return requestJson(`/api/nasa-datasets?${qs.toString()}`, { method: 'GET' });
 }
 
 export function apiCompleteMission(missionId: string): Promise<{

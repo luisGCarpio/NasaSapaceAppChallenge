@@ -13,7 +13,7 @@ export function CheckinDetailModal({
   onClose: () => void;
 }) {
   if (!entry) return null;
-  const evaluation = evaluateHealth(entry.vitals);
+  const evaluation = evaluateHealth(entry.vitals, { context: entry.context });
 
   return (
     <div

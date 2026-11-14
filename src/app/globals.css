@@ -50,7 +50,7 @@ h1, h2, h3, .font-display {
 
 /* TOP BAR */
 .topbar {
-  max-width: 1380px;
+  max-width: 1180px;
   margin: 0 auto 18px;
   display: flex;
   flex-wrap: wrap;
@@ -80,17 +80,7 @@ h1, h2, h3, .font-display {
 .brand h1 { font-size: 1.55rem; line-height: 1; }
 .brand p { font-size: 0.8rem; color: var(--ink-muted); font-weight: 700; margin-top: 2px; }
 
-/* ESCENARIOS DEMO (1 CLIC) */
-.scenarios {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  background: var(--surface-alt);
-  padding: 6px;
-  border-radius: 18px;
-  border: var(--border);
-}
-
+/* BOTONES TÁCTILES */
 .btn-tactile {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 800;
@@ -118,60 +108,70 @@ h1, h2, h3, .font-display {
 .btn-tactile.active-yellow { background: var(--yellow-bg); }
 .btn-tactile.active-red { background: var(--red-bg); }
 
-/* RACHA Y NIVEL */
-.hud-pill {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--surface);
-  border: var(--border);
-  border-radius: 16px;
-  padding: 8px 14px;
-  box-shadow: var(--shadow-hard);
-}
-
-.streak-badge {
-  background: var(--yellow-bg);
-  border: 2px solid var(--ink);
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: 0.82rem;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.xp-wrap { min-width: 120px; }
-.xp-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.74rem;
-  font-weight: 800;
-  margin-bottom: 4px;
-}
-.xp-bar {
-  height: 10px;
-  background: var(--surface-alt);
-  border: 2px solid var(--ink);
-  border-radius: 999px;
-  overflow: hidden;
-}
-.xp-fill {
-  height: 100%;
-  width: 60%;
-  background: var(--periwinkle);
-  transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* MAIN BENTO GRID */
-.grid {
-  max-width: 1380px;
+/* LAYOUT CON MENÚ LATERAL EN PC */
+.app-layout {
+  max-width: 1180px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 355px 1fr 370px;
-  gap: 18px;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 24px;
   align-items: start;
+}
+
+.sidebar-nav {
+  background: var(--surface);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-hard);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: sticky;
+  top: 16px;
+}
+
+.nav-btn {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  font-size: 0.88rem;
+  text-align: left;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  padding: 11px 13px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 3px 0 var(--ink);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.2s, color 0.2s;
+}
+
+.nav-btn:hover {
+  background: var(--surface-alt);
+  transform: translateY(-1px);
+}
+
+.nav-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.nav-btn.active {
+  background: var(--periwinkle);
+  color: #FFF;
+}
+
+.nav-icon {
+  flex-shrink: 0;
+}
+
+.view-container {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
 }
 
 .card {
@@ -190,16 +190,22 @@ h1, h2, h3, .font-display {
   margin-bottom: 14px;
 }
 
-/* PANEL IZQUIERDO: 6 CONTROLES */
+/* CONTROLES DEL CUERPO: 3 TARJETAS SEPARADAS DIRECTAS SOBRE EL FONDO */
+.controls-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .system-group {
-  border: 2px solid var(--ink);
-  border-radius: var(--radius-md);
-  padding: 12px 13px;
-  margin-bottom: 12px;
-  background: #FFF;
+  background: var(--surface);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-hard);
+  padding: 18px;
+  margin-bottom: 0;
   transition: background 0.25s, transform 0.2s;
 }
-.system-group:last-child { margin-bottom: 0; }
 .system-group.highlight {
   background: var(--lavender-soft);
   transform: scale(1.015);
@@ -289,6 +295,7 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 .mood-btn {
   border: 2px solid var(--ink);
   background: var(--surface);
+  color: var(--ink);
   border-radius: 11px;
   padding: 6px 2px;
   cursor: pointer;
@@ -444,6 +451,7 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 
 .action-chip {
   background: var(--surface);
+  color: var(--ink);
   border: 2px solid var(--ink);
   border-radius: 12px;
   padding: 8px 12px;
@@ -478,6 +486,7 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
   border-radius: 8px;
   border: 1.8px solid var(--ink);
   background: var(--surface-alt);
+  color: var(--ink);
   cursor: pointer;
 }
 .chart-tab.active {
@@ -529,6 +538,7 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 .mission-btn {
   border: 2px solid var(--ink);
   background: #FFF;
+  color: var(--ink);
   border-radius: 14px;
   padding: 10px;
   text-align: left;
@@ -639,7 +649,278 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
 
-@media (max-width: 1120px) {
-  .grid { grid-template-columns: 1fr; }
-  .center-stack { order: -1; }
+/* MENÚ INFERIOR MÓVIL */
+.bottom-nav {
+  display: none;
 }
+
+.bottom-nav-btn {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  font-size: 0.72rem;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  padding: 7px 4px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  box-shadow: 0 2px 0 var(--ink);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.2s, color 0.2s;
+}
+
+.bottom-nav-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.bottom-nav-btn.active {
+  background: var(--periwinkle);
+  color: #FFF;
+}
+
+@media (max-width: 900px) {
+  body {
+    padding: 14px 14px 96px;
+  }
+
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar-nav {
+    display: none;
+  }
+
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 80;
+    background: var(--surface);
+    border-top: var(--border);
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+
+  .toast {
+    bottom: 84px;
+  }
+}
+
+/* ESTILOS COMPLEMENTARIOS PARA DATOS REALES v3.0.0 Y DATASET NASA */
+.topbar-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.session-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  padding: 6px 11px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.meta-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 12px;
+}
+
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+}
+
+.meta-pill.warn { background: var(--yellow-bg); }
+.meta-pill.danger { background: var(--red-bg); }
+.meta-pill.ok { background: var(--green-bg); }
+.meta-pill.soft { background: var(--lavender-soft); }
+
+.trace-box {
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.nasa-banner {
+  background: var(--lavender-soft);
+  border: var(--border);
+  border-radius: 16px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 3px 0 var(--ink);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.measure-toggle {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  padding: 2px 7px;
+  background: var(--green-bg);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.measure-toggle.omitted {
+  background: var(--surface-alt);
+  color: var(--ink-muted);
+}
+
+.control-row.is-omitted {
+  opacity: 0.52;
+}
+
+.context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.context-select {
+  width: 100%;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 7px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip-toggle {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.chip-toggle.active {
+  background: var(--bubblegum);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.mission-btn.locked,
+.action-chip.locked {
+  background: var(--red-bg);
+  border-style: dashed;
+  opacity: 0.88;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.nasa-grid-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.stat-box {
+  background: var(--surface-alt);
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.nasa-table-wrap {
+  overflow-x: auto;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  background: #FFF;
+}
+
+.nasa-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.nasa-table th,
+.nasa-table td {
+  padding: 8px 10px;
+  border-bottom: 1.5px solid var(--surface-alt);
+  text-align: left;
+}
+
+.nasa-table th {
+  background: var(--surface-alt);
+  font-weight: 800;
+}
+
+.replay-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.replay-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #FFF;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  padding: 9px 11px;
+  font-size: 0.76rem;
+}
+
+@media (max-width: 600px) {
+  .context-grid,
+  .nasa-grid-stats {
+    grid-template-columns: 1fr;
+  }
+}
+

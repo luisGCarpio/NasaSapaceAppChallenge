@@ -1,7 +1,8 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { HealthEvaluation, ScenarioId, VitalValues } from '@/domain/health';
+import type { HealthEvaluation, PartialVitalValues, ScenarioId, VitalValues } from '@/domain/health';
+import type { NasaStudyId } from '@/domain/nasa/nasa-types';
 import {
   ApiError,
   apiCompleteMission,
@@ -21,11 +22,21 @@ export interface ActiveSimulation {
   evaluation: HealthEvaluation;
 }
 
+export interface ActiveNasaReplay {
+  subjectId: string;
+  studyId: NasaStudyId;
+  cohortGroup: string;
+  relativeLabel: string;
+  vitals: PartialVitalValues;
+  evaluation: HealthEvaluation;
+}
+
 interface AresContextValue {
   state: PublicUserState | null;
   loading: boolean;
   authError: string | null;
   activeSimulation: ActiveSimulation | null;
+  activeNasaReplay: ActiveNasaReplay | null;
   simulatorOpen: boolean;
   commsOpen: boolean;
   commsDraftMessage: string;
@@ -36,6 +47,8 @@ interface AresContextValue {
   applyUpdatedState: (next: PublicUserState) => void;
   runSimulation: (id: ScenarioId) => Promise<void>;
   clearSimulation: () => void;
+  activateNasaReplay: (replay: ActiveNasaReplay) => void;
+  clearNasaReplay: () => void;
   setSimulatorOpen: (open: boolean) => void;
   openCommsWithMessage: (message: string) => void;
   closeComms: () => void;
@@ -50,6 +63,7 @@ export function AresProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [activeSimulation, setActiveSimulation] = useState<ActiveSimulation | null>(null);
+  const [activeNasaReplay, setActiveNasaReplay] = useState<ActiveNasaReplay | null>(null);
   const [simulatorOpen, setSimulatorOpen] = useState(false);
   const [commsOpen, setCommsOpen] = useState(false);
   const [commsDraftMessage, setCommsDraftMessage] = useState('');
@@ -79,6 +93,7 @@ export function AresProvider({ children }: { children: ReactNode }) {
     setAuthError(null);
     const result = await apiLogin({ identifier, password });
     setActiveSimulation(null);
+    setActiveNasaReplay(null);
     setState(result.state);
   }, []);
 
@@ -87,6 +102,7 @@ export function AresProvider({ children }: { children: ReactNode }) {
       setAuthError(null);
       const result = await apiRegister(payload);
       setActiveSimulation(null);
+      setActiveNasaReplay(null);
       setState(result.state);
     },
     []
@@ -95,6 +111,7 @@ export function AresProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await apiLogout();
     setActiveSimulation(null);
+    setActiveNasaReplay(null);
     setSimulatorOpen(false);
     setCommsOpen(false);
     setState(null);
@@ -104,6 +121,7 @@ export function AresProvider({ children }: { children: ReactNode }) {
     async (id: ScenarioId) => {
       const result = await apiRunScenario(id);
       const label = state?.scenarios[id]?.label ?? `Escenario ${id}`;
+      setActiveNasaReplay(null);
       setActiveSimulation({ id, label, vitals: result.vitals, evaluation: result.evaluation });
     },
     [state]
@@ -111,6 +129,15 @@ export function AresProvider({ children }: { children: ReactNode }) {
 
   const clearSimulation = useCallback(() => {
     setActiveSimulation(null);
+  }, []);
+
+  const activateNasaReplay = useCallback((replay: ActiveNasaReplay) => {
+    setActiveSimulation(null);
+    setActiveNasaReplay(replay);
+  }, []);
+
+  const clearNasaReplay = useCallback(() => {
+    setActiveNasaReplay(null);
   }, []);
 
   const openCommsWithMessage = useCallback((message: string) => {
@@ -140,6 +167,7 @@ export function AresProvider({ children }: { children: ReactNode }) {
         loading,
         authError,
         activeSimulation,
+        activeNasaReplay,
         simulatorOpen,
         commsOpen,
         commsDraftMessage,
@@ -150,6 +178,8 @@ export function AresProvider({ children }: { children: ReactNode }) {
         applyUpdatedState: setState,
         runSimulation,
         clearSimulation,
+        activateNasaReplay,
+        clearNasaReplay,
         setSimulatorOpen,
         openCommsWithMessage,
         closeComms,

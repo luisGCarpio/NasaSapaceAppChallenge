@@ -52,19 +52,23 @@ export function CheckinHistoryTable({
                 {entry.readinessScore !== null ? `${entry.readinessScore}/100` : 'N/D'}
               </td>
               <td className="py-3 px-3 font-mono tabular-nums text-slate-300">
-                {entry.vitals.sleep_hours} h
+                {entry.vitals.sleep_hours != null ? `${entry.vitals.sleep_hours} h` : '—'}
               </td>
               <td className="py-3 px-3 font-mono tabular-nums text-slate-300">
-                {entry.vitals.heart_rate} BPM
+                {entry.vitals.heart_rate != null ? `${entry.vitals.heart_rate} BPM` : '—'}
               </td>
               <td className="py-3 px-3 font-mono tabular-nums text-slate-300">
-                {entry.vitals.bp_systolic}/{entry.vitals.bp_diastolic}
+                {entry.vitals.bp_systolic != null && entry.vitals.bp_diastolic != null
+                  ? `${entry.vitals.bp_systolic}/${entry.vitals.bp_diastolic}`
+                  : entry.vitals.bp_systolic != null
+                    ? `${entry.vitals.bp_systolic}/—`
+                    : '—'}
               </td>
               <td className="py-3 px-3 font-mono tabular-nums text-slate-300">
-                {entry.vitals.glucose} mg/dL
+                {entry.vitals.glucose != null ? `${entry.vitals.glucose} mg/dL` : '—'}
               </td>
               <td className="py-3 px-3 font-mono tabular-nums text-slate-300">
-                {entry.vitals.temperature} °C
+                {entry.vitals.temperature != null ? `${entry.vitals.temperature} °C` : '—'}
               </td>
               <td className="py-3 pl-3 text-right">
                 <button

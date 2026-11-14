@@ -1,13 +1,30 @@
-import type { SystemEvaluation } from '@/domain/health';
+import type { BaselineMap, SystemEvaluation } from '@/domain/health';
 import { AresIcon, type AresIconName } from '../ui/Icons';
 import { SectionCard } from '../ui/SectionCard';
 import { StatusBadge } from '../ui/StatusBadge';
 
-export function SystemDetailCard({ system }: { system: SystemEvaluation }) {
+export function SystemDetailCard({
+  system,
+  baselines,
+}: {
+  system: SystemEvaluation;
+  baselines?: BaselineMap;
+}) {
+  const sysKeys =
+    system.systemId === 'heart'
+      ? (['heart_rate', 'bp_systolic', 'bp_diastolic'] as const)
+      : system.systemId === 'body'
+        ? (['temperature', 'glucose'] as const)
+        : (['sleep_hours'] as const);
+
+  const relevantBaselines = sysKeys
+    .map((k) => baselines?.[k])
+    .filter((b): b is NonNullable<typeof b> => Boolean(b && b.n > 0));
+
   return (
     <SectionCard
       title={system.systemName}
-      subtitle="Lectura analizada del subsistema"
+      subtitle={system.metricsSummary || 'Lectura analizada del subsistema'}
       action={<StatusBadge status={system.status} />}
     >
       <div className="space-y-4">
@@ -15,6 +32,26 @@ export function SystemDetailCard({ system }: { system: SystemEvaluation }) {
           <h3 className="text-base font-semibold text-slate-100">{system.title}</h3>
           <p className="mt-1 text-sm leading-relaxed text-slate-300">{system.message}</p>
         </div>
+
+        {relevantBaselines.length > 0 ? (
+          <div className="rounded-xl border border-[#1E2E4E] bg-[#060A12] p-3">
+            <p className="text-[11px] font-semibold text-sky-300">Referencia personal longitudinal</p>
+            <ul className="mt-1 space-y-1 text-xs text-slate-300">
+              {relevantBaselines.map((b) => (
+                <li key={b.key} className="font-mono text-[11px]">
+                  {b.key}: {b.summaryText}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {system.coverage?.missing?.length ? (
+          <p className="text-[11px] text-slate-400">
+            Indicadores no medidos en esta toma:{' '}
+            <span className="font-mono text-slate-300">{system.coverage.missing.join(', ')}</span>
+          </p>
+        ) : null}
 
         {system.reasons.length > 0 ? (
           <div>

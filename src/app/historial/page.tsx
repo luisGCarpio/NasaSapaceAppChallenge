@@ -1,5 +1,5 @@
 import { AresStudioView } from '@/components/home/AresStudioView';
 
 export default function HistorialPage() {
-  return <AresStudioView />;
+  return <AresStudioView initialTab="monitor" />;
 }

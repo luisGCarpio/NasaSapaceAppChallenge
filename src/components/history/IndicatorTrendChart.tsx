@@ -3,9 +3,10 @@
 import type { CheckinEntry } from '@/server/storage/types';
 import { TREND_METRICS, type TrendMetricKey } from './DateFilterBar';
 
-function readMetricValue(entry: CheckinEntry, metric: TrendMetricKey): number {
-  if (metric === 'readinessScore') return entry.readinessScore ?? 0;
-  return entry.vitals[metric];
+function readMetricValue(entry: CheckinEntry, metric: TrendMetricKey): number | null {
+  if (metric === 'readinessScore') return entry.readinessScore ?? null;
+  const v = entry.vitals[metric];
+  return typeof v === 'number' && Number.isFinite(v) ? v : null;
 }
 
 export function IndicatorTrendChart({
@@ -17,15 +18,21 @@ export function IndicatorTrendChart({
 }) {
   const meta = TREND_METRICS.find((m) => m.key === metric) ?? TREND_METRICS[0];
 
-  if (entries.length === 0) {
+  const validItems = entries
+    .map((entry, idx) => ({ entry, idx, val: readMetricValue(entry, metric) }))
+    .filter((item): item is { entry: CheckinEntry; idx: number; val: number } => item.val !== null);
+
+  if (entries.length === 0 || validItems.length === 0) {
     return (
-      <div className="flex h-44 items-center justify-center rounded-xl border border-dashed border-[#1E2E4E] bg-[#060A12] text-xs text-slate-400">
-        Aún no hay chequeos reales registrados para graficar.
+      <div className="flex h-44 items-center justify-center rounded-xl border border-dashed border-[#1E2E4E] bg-[#060A12] px-4 text-center text-xs text-slate-400">
+        {entries.length === 0
+          ? 'Aún no hay observaciones reales registradas para graficar.'
+          : `Sin mediciones registradas de ${meta.label} en las fechas visibles (no se interpolan ausencias).`}
       </div>
     );
   }
 
-  const values = entries.map((e) => readMetricValue(e, metric));
+  const values = validItems.map((i) => i.val);
   const rawMin = Math.min(...values);
   const rawMax = Math.max(...values);
   const span = rawMax === rawMin ? Math.max(1, rawMax * 0.2) : rawMax - rawMin;
@@ -37,18 +44,25 @@ export function IndicatorTrendChart({
   const padX = 36;
   const padY = 24;
 
-  const points = entries.map((entry, idx) => {
-    const val = readMetricValue(entry, metric);
+  const points = validItems.map((item) => {
     const x =
       entries.length === 1
         ? width / 2
-        : padX + (idx / (entries.length - 1)) * (width - padX * 2);
-    const ratio = (val - minVal) / (maxVal - minVal || 1);
+        : padX + (item.idx / (entries.length - 1)) * (width - padX * 2);
+    const ratio = (item.val - minVal) / (maxVal - minVal || 1);
     const y = height - padY - ratio * (height - padY * 2);
-    return { x, y, val, dateKey: entry.dateKey };
+    return { x, y, val: item.val, dateKey: item.entry.dateKey };
   });
 
-  const polyline = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  // Only connect directly adjacent consecutive entries (gaps stay visually uninterpolated)
+  const segments: string[] = [];
+  for (let i = 0; i < validItems.length - 1; i++) {
+    if (validItems[i + 1].idx - validItems[i].idx === 1) {
+      segments.push(
+        `M ${points[i].x.toFixed(1)} ${points[i].y.toFixed(1)} L ${points[i + 1].x.toFixed(1)} ${points[i + 1].y.toFixed(1)}`
+      );
+    }
+  }
 
   return (
     <div className="rounded-xl border border-[#1E2E4E] bg-[#060A12] p-3">
@@ -57,7 +71,7 @@ export function IndicatorTrendChart({
           Tendencia real: <strong className="text-slate-200">{meta.label}</strong> ({meta.unit})
         </span>
         <span className="font-mono tabular-nums">
-          Min {rawMin} · Max {rawMax}
+          n={validItems.length} · Min {rawMin} · Max {rawMax}
         </span>
       </div>
 
@@ -65,45 +79,29 @@ export function IndicatorTrendChart({
         viewBox={`0 0 ${width} ${height}`}
         className="h-44 w-full overflow-visible"
         role="img"
-        aria-label={`Gráfico de evolución de ${meta.label}`}
+        aria-label={`Gráfico de evolución real de ${meta.label}`}
       >
         <line x1={padX} y1={padY} x2={width - padX} y2={padY} stroke="#1E2E4E" strokeDasharray="3 3" />
-        <line
-          x1={padX}
-          y1={height - padY}
-          x2={width - padX}
-          y2={height - padY}
-          stroke="#1E2E4E"
-        />
+        <line x1={padX} y1={height - padY} x2={width - padX} y2={height - padY} stroke="#1E2E4E" />
 
-        {points.length > 1 ? (
-          <polyline
+        {segments.map((d, i) => (
+          <path
+            key={i}
+            d={d}
             fill="none"
             stroke="#38BDF8"
             strokeWidth="2.5"
             strokeLinecap="round"
-            strokeLinejoin="round"
-            points={polyline}
           />
-        ) : null}
+        ))}
 
         {points.map((p) => (
           <g key={p.dateKey}>
             <circle cx={p.x} cy={p.y} r="5" fill="#38BDF8" stroke="#060A12" strokeWidth="2" />
-            <text
-              x={p.x}
-              y={p.y - 10}
-              textAnchor="middle"
-              className="fill-slate-200 font-mono text-[11px]"
-            >
+            <text x={p.x} y={p.y - 10} textAnchor="middle" className="fill-slate-200 font-mono text-[11px]">
               {p.val}
             </text>
-            <text
-              x={p.x}
-              y={height - 6}
-              textAnchor="middle"
-              className="fill-slate-400 font-mono text-[10px]"
-            >
+            <text x={p.x} y={height - 6} textAnchor="middle" className="fill-slate-400 font-mono text-[10px]">
               {p.dateKey.slice(5)}
             </text>
           </g>

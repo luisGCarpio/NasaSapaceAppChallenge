@@ -190,7 +190,7 @@ export function AuthView() {
 
         <div className="mt-5 border-t border-[#1E2E4E] pt-4">
           <p className="text-xs font-medium text-slate-400">
-            Cuentas de evaluación (completan usuario y contraseña para autenticar por API):
+            Cuentas de acceso rápido (bitácora limpia — sin signos vitales ficticios precargados):
           </p>
           <div className="mt-2.5 grid grid-cols-2 gap-2">
             <button

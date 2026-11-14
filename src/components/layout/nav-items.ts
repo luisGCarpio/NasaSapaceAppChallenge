@@ -12,4 +12,5 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/registro', label: 'Nuevo Chequeo', shortLabel: 'Registro', icon: 'plus' },
   { href: '/historial', label: 'Tendencias e Historial', shortLabel: 'Historial', icon: 'history' },
   { href: '/bienestar', label: 'Bienestar y Equipo', shortLabel: 'Bienestar', icon: 'shield' },
+  { href: '/datos-nasa', label: 'Datos Reales NASA', shortLabel: 'NASA', icon: 'activity' },
 ];

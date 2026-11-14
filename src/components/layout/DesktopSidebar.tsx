@@ -8,8 +8,8 @@ import { NAV_ITEMS } from './nav-items';
 
 export function DesktopSidebar() {
   const pathname = usePathname();
-  const { state, activeSimulation, openCommsWithMessage } = useAres();
-  const evaluation = activeSimulation?.evaluation ?? state?.evaluation;
+  const { state, activeSimulation, activeNasaReplay, openCommsWithMessage } = useAres();
+  const evaluation = activeNasaReplay?.evaluation ?? activeSimulation?.evaluation ?? state?.evaluation;
 
   return (
     <aside className="hidden md:flex md:w-60 md:shrink-0 md:flex-col md:justify-between border-r border-[#1E2E4E] bg-[#0B1220]/70 p-4">

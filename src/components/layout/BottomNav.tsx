@@ -13,7 +13,7 @@ export function BottomNav() {
       aria-label="Navegación móvil"
       className="fixed inset-x-0 bottom-0 z-30 border-t border-[#1E2E4E] bg-[#060A12]/95 backdrop-blur md:hidden"
     >
-      <div className="grid grid-cols-4 gap-1 px-2 py-2">
+      <div className="grid grid-cols-5 gap-1 px-2 py-2">
         {NAV_ITEMS.map((item) => {
           const active = pathname === item.href;
           return (

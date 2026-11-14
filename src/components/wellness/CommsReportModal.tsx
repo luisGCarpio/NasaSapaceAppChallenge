@@ -7,12 +7,20 @@ import { AresIcon } from '../ui/Icons';
 import { StatusBadge } from '../ui/StatusBadge';
 
 export function CommsReportModal() {
-  const { state, activeSimulation, commsOpen, commsDraftMessage, closeComms, applyUpdatedState } =
-    useAres();
+  const {
+    state,
+    activeSimulation,
+    activeNasaReplay,
+    commsOpen,
+    commsDraftMessage,
+    closeComms,
+    applyUpdatedState,
+  } = useAres();
   const [message, setMessage] = useState('');
   const { submitting, status, copyAndLog, resetStatus } = useClipboardReport(applyUpdatedState);
 
-  const activeEvaluation = activeSimulation?.evaluation ?? state?.evaluation;
+  const activeEvaluation =
+    activeNasaReplay?.evaluation ?? activeSimulation?.evaluation ?? state?.evaluation;
 
   useEffect(() => {
     if (commsOpen) {
@@ -34,10 +42,10 @@ export function CommsReportModal() {
         <div className="flex items-start justify-between gap-3 border-b border-[#1E2E4E] pb-3">
           <div>
             <h2 id="comms-modal-title" className="text-base font-semibold text-slate-100">
-              Reporte para Equipo / Control de Tierra
+              Copiar Resumen Clínico a Bitácora
             </h2>
             <p className="mt-0.5 text-xs text-slate-400">
-              Copia verificada al portapapeles y registro auditable en bitácora.
+              Copia local al portapapeles y registro auditable (sin transmisión de radio ni telemetría externa).
             </p>
           </div>
           <button

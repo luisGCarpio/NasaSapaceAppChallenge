@@ -32,21 +32,31 @@ export function MissionCardItem({
         </div>
         <div>
           <p className="text-sm font-semibold text-slate-100">{mission.title}</p>
-          <p className="text-xs text-slate-400">Recompensa única diaria: +{mission.xpReward} XP</p>
+          <p className="text-xs text-slate-400">
+            {mission.blockedByRestriction
+              ? mission.restrictionReason || 'Bloqueada por restricción clínica activa.'
+              : `Recompensa única diaria: +${mission.xpReward} XP`}
+          </p>
         </div>
       </div>
 
       <button
         type="button"
-        disabled={mission.completed || busy}
+        disabled={mission.completed || busy || Boolean(mission.blockedByRestriction)}
         onClick={() => onComplete(mission.id)}
         className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition-colors ${
-          mission.completed
-            ? 'border border-emerald-500/40 bg-emerald-950/60 text-emerald-200 cursor-default'
-            : 'bg-[#0B3D91] text-white hover:bg-[#105BD8] disabled:opacity-50'
+          mission.blockedByRestriction
+            ? 'border border-red-500/40 bg-red-950/50 text-red-200 cursor-not-allowed'
+            : mission.completed
+              ? 'border border-emerald-500/40 bg-emerald-950/60 text-emerald-200 cursor-default'
+              : 'bg-[#0B3D91] text-white hover:bg-[#105BD8] disabled:opacity-50'
         }`}
       >
-        {mission.completed ? 'Completada hoy' : `Completar (+${mission.xpReward} XP)`}
+        {mission.blockedByRestriction
+          ? 'Pausada por alerta'
+          : mission.completed
+            ? 'Completada hoy'
+            : `Completar (+${mission.xpReward} XP)`}
       </button>
     </div>
   );

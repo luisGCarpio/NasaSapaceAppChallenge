@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { AresProvider } from '@/context/AresContext';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'A.R.E.S. Pulse — Monitor Lúdico de Salud Espacial',
   description:
-    'Chequeo Vivo del Astronauta • Motor de Cruce Fisiológico (NASA Space Apps Challenge 2026).',
+    'Chequeo Vivo del Astronauta • Motor Contextual v3.0.0 y Validación con Datos Reales NASA OSDR/NLSP',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -19,7 +20,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <AresProvider>{children}</AresProvider>
+      </body>
     </html>
   );
 }

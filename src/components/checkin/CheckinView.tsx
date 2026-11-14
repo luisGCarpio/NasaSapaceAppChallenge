@@ -8,12 +8,23 @@ import { PreliminaryPreview } from './PreliminaryPreview';
 
 export function CheckinView() {
   const router = useRouter();
-  const { state, applyUpdatedState, clearSimulation } = useAres();
-  const { draft, previewEvaluation, saving, submitFeedback, setField, loadBaseline, submitCheckin } =
-    useCheckinDraft(state?.currentVitals ?? null, (next) => {
-      clearSimulation();
-      applyUpdatedState(next);
-    });
+  const { state, applyUpdatedState, clearSimulation, clearNasaReplay } = useAres();
+  const {
+    draft,
+    context,
+    previewEvaluation,
+    saving,
+    submitFeedback,
+    setField,
+    setContextField,
+    loadBaseline,
+    clearDraft,
+    submitCheckin,
+  } = useCheckinDraft(state?.currentVitals ?? null, state?.currentContext ?? null, (next) => {
+    clearSimulation();
+    clearNasaReplay();
+    applyUpdatedState(next);
+  });
 
   if (!state) return null;
 
@@ -30,13 +41,16 @@ export function CheckinView() {
       <div className="lg:col-span-7">
         <CheckinForm
           draft={draft}
+          context={context}
           specs={state.vitalSpecs}
           evaluation={previewEvaluation}
           baselineVitals={state.currentVitals}
           saving={saving}
           feedback={submitFeedback}
           onChangeField={setField}
+          onChangeContext={setContextField}
           onLoadBaseline={loadBaseline}
+          onClear={clearDraft}
           onSubmit={handleSaveAndNavigate}
         />
       </div>

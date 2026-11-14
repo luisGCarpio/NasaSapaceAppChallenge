@@ -1,5 +1,5 @@
 import { AresStudioView } from '@/components/home/AresStudioView';
 
 export default function HomePage() {
-  return <AresStudioView />;
+  return <AresStudioView initialTab="astro" />;
 }
