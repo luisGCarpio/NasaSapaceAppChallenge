@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { SCENARIOS, evaluateHealth, type ScenarioId } from '@/domain/health';
+import { SCENARIOS, SCENARIOS_META, evaluateHealth, type ScenarioId } from '@/domain/health';
 
 export async function POST(
   _request: Request,
@@ -11,14 +11,15 @@ export async function POST(
   }
 
   const scenarioId = id as ScenarioId;
-  const vitals = SCENARIOS[scenarioId];
-  const evaluation = evaluateHealth(vitals);
+  const meta = SCENARIOS_META[scenarioId];
+  const evaluation = evaluateHealth(meta.vitals, { context: meta.context });
 
   return NextResponse.json(
     {
       id: scenarioId,
       isSimulation: true,
-      vitals,
+      vitals: meta.vitals,
+      context: meta.context,
       evaluation,
     },
     { status: 200 }

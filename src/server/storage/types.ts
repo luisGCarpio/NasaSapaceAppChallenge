@@ -1,12 +1,30 @@
 import type {
   HealthEvaluation,
   HealthStatus,
+  PartialVitalValues,
+  QualityTier,
   ScenarioId,
   ScenarioMetadata,
   VITAL_SPECS,
   VitalValues,
 } from '@/domain/health';
 import type { GamificationState } from '@/domain/missions/mission-catalog';
+import type { ObservationContext } from '@/domain/nasa/nasa-types';
+
+export interface HealthObservation {
+  observationId: string;
+  dateKey: string;
+  capturedAt: string;
+  source: string;
+  clientSubmissionId?: string;
+  vitals: PartialVitalValues;
+  context: ObservationContext;
+  overallStatus: HealthStatus;
+  readinessScore: number | null;
+  coveragePct: number;
+  qualityTier: QualityTier;
+  crossConclusionId: string | null;
+}
 
 export interface CheckinEntry {
   id: string;
@@ -15,7 +33,11 @@ export interface CheckinEntry {
   timestamp: string;
   updatesCount: number;
   clientSubmissionId?: string;
-  vitals: VitalValues;
+  vitals: VitalValues | PartialVitalValues;
+  context?: ObservationContext;
+  coveragePct?: number;
+  qualityTier?: QualityTier;
+  observationIds?: string[];
   overallStatus: HealthStatus;
   readinessScore: number | null;
   crossConclusionId: string | null;
@@ -56,9 +78,11 @@ export interface DbUser {
   passwordHash: string;
   name: string;
   role: string;
-  currentVitals: VitalValues | null;
+  currentVitals: VitalValues | PartialVitalValues | null;
+  currentContext?: ObservationContext | null;
   lastCheckinAt: string | null;
   history: CheckinEntry[];
+  observations?: HealthObservation[];
   commsLog: CommsLogEntry[];
   gamification: GamificationState;
 }
@@ -86,8 +110,10 @@ export interface PublicUser {
 
 export interface PublicUserState {
   user: PublicUser;
-  currentVitals: VitalValues | null;
+  currentVitals: VitalValues | PartialVitalValues | null;
+  currentContext?: ObservationContext | null;
   history: CheckinEntry[];
+  observations: HealthObservation[];
   gamification: GamificationState;
   storageMode: 'local_json_atomic' | 'local_with_remote_retry';
   syncMeta: SyncMeta;

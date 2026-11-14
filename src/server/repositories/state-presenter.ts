@@ -1,5 +1,6 @@
 import { ALGORITHM_VERSION, SCENARIOS_META, VITAL_SPECS, evaluateHealth } from '@/domain/health';
 import { getMissionDateKey } from '@/domain/missions/mission-date';
+import { applyClinicalRestrictionsToMissions } from '@/domain/missions/mission-safety';
 import { MAX_COMMS_LOG, MAX_HISTORY_DAYS } from '../storage/file-store';
 import type { DbState, DbUser, PublicUser, PublicUserState } from '../storage/types';
 
@@ -32,13 +33,24 @@ export function ensureDailyMissionsState(user: DbUser, todayKey = getMissionDate
  */
 export function buildPublicUserState(db: DbState, user: DbUser): PublicUserState {
   ensureDailyMissionsState(user);
-  const evaluation = evaluateHealth(user.currentVitals ?? {});
+  const safeObservations = user.observations ?? [];
+  const evaluation = evaluateHealth(user.currentVitals ?? {}, {
+    context: user.currentContext ?? undefined,
+    priorObservations: safeObservations.slice(0, -1),
+  });
+
+  const gamification = {
+    ...user.gamification,
+    missions: applyClinicalRestrictionsToMissions(user.gamification.missions, evaluation),
+  };
 
   return {
     user: toPublicUser(user),
     currentVitals: user.currentVitals,
+    currentContext: user.currentContext ?? null,
     history: user.history.slice(-MAX_HISTORY_DAYS),
-    gamification: user.gamification,
+    observations: safeObservations,
+    gamification,
     storageMode: db.syncMeta.status === 'synced' ? 'local_with_remote_retry' : 'local_json_atomic',
     syncMeta: db.syncMeta,
     commsLog: user.commsLog.slice(-MAX_COMMS_LOG),

@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import type { HealthStatus } from '@/domain/health';
+import { evaluateHealth, type HealthStatus } from '@/domain/health';
 import { XP_PER_LEVEL } from '@/domain/missions/mission-catalog';
 import { computeNextStreak, getMissionDateKey } from '@/domain/missions/mission-date';
 import { MAX_COMMS_LOG, saveDb, withDbLock } from '../storage/file-store';
@@ -25,6 +25,20 @@ export async function completeUserMission(userId: string, missionId: string): Pr
     const mission = user.gamification.missions.find((item) => item.id === missionId);
     if (!mission) {
       return { ok: false, status: 400, error: `Misión desconocida: ${missionId}` };
+    }
+
+    if (mission.id === 'exercise' && user.currentVitals) {
+      const currentEval = evaluateHealth(user.currentVitals, {
+        context: user.currentContext ?? undefined,
+        priorObservations: (user.observations ?? []).slice(0, -1),
+      });
+      if (currentEval.clinicalRestrictions.restrictStrenuousExercise) {
+        return {
+          ok: false,
+          status: 400,
+          error: `Ejercicio restringido por alerta clínica: ${currentEval.clinicalRestrictions.reasons.join(' ')}`,
+        };
+      }
     }
 
     mission.completed = true;

@@ -1,9 +1,20 @@
 import crypto from 'node:crypto';
-import { evaluateHealth, type HealthEvaluation, type VitalValues } from '@/domain/health';
+import {
+  evaluateHealth,
+  normalizeContext,
+  type HealthEvaluation,
+  type PartialVitalValues,
+} from '@/domain/health';
 import { getMissionDateKey } from '@/domain/missions/mission-date';
-import { MAX_HISTORY_DAYS, loadDb, saveDb, withDbLock } from '../storage/file-store';
+import {
+  MAX_HISTORY_DAYS,
+  MAX_OBSERVATIONS_ARCHIVE,
+  loadDb,
+  saveDb,
+  withDbLock,
+} from '../storage/file-store';
 import { attemptCheckinRemoteSync } from '../storage/remote-sync';
-import type { CheckinEntry, PublicUserState } from '../storage/types';
+import type { CheckinEntry, HealthObservation, PublicUserState } from '../storage/types';
 import { buildPublicUserState } from './state-presenter';
 
 export type SaveCheckinResult =
@@ -33,6 +44,7 @@ export function getUserStateSnapshot(userId: string): PublicUserState | null {
 export async function saveUserCheckin(input: {
   userId: string;
   rawVitals: unknown;
+  rawContext?: unknown;
   isSimulation?: boolean;
   clientSubmissionId?: string;
   dateKeyOverride?: string;
@@ -46,17 +58,19 @@ export async function saveUserCheckin(input: {
     };
   }
 
-  const evaluation = evaluateHealth(input.rawVitals);
-  if (!evaluation.valid) {
+  const context = normalizeContext(
+    input.rawContext && typeof input.rawContext === 'object' ? (input.rawContext as never) : undefined
+  );
+  const preCheck = evaluateHealth(input.rawVitals, { context });
+  if (!preCheck.valid) {
     return {
       ok: false,
       status: 422,
-      error: evaluation.errors[0] || 'Signos vitales incompletos o inválidos.',
-      evaluation,
+      error: preCheck.errors[0] || 'Signos vitales inválidos o insuficientes.',
+      evaluation: preCheck,
     };
   }
 
-  const validatedVitals = evaluation.vitals as VitalValues;
   const targetDateKey =
     typeof input.dateKeyOverride === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input.dateKeyOverride)
       ? input.dateKeyOverride
@@ -72,6 +86,8 @@ export async function saveUserCheckin(input: {
       return { ok: false, status: 404, error: 'Usuario no encontrado.' };
     }
 
+    if (!Array.isArray(user.observations)) user.observations = [];
+
     if (submissionId) {
       const existingBySub = user.history.find((item) => item.clientSubmissionId === submissionId);
       if (existingBySub) {
@@ -81,13 +97,46 @@ export async function saveUserCheckin(input: {
           consolidated: false,
           deduplicated: true,
           entry: existingBySub,
-          evaluation: evaluateHealth(existingBySub.vitals),
+          evaluation: evaluateHealth(existingBySub.vitals, {
+            context: existingBySub.context,
+            priorObservations: user.observations.filter(
+              (o) => o.clientSubmissionId !== submissionId
+            ),
+          }),
           state: buildPublicUserState(db, user),
         };
       }
     }
 
     const now = new Date().toISOString();
+    const evaluation = evaluateHealth(input.rawVitals, {
+      context,
+      priorObservations: user.observations,
+      previousStatus: user.history[user.history.length - 1]?.overallStatus ?? null,
+    });
+    const validatedVitals = evaluation.vitals as PartialVitalValues;
+
+    const observationId = `${user.id}-${targetDateKey}-${crypto.randomUUID().slice(0, 8)}`;
+    const observation: HealthObservation = {
+      observationId,
+      dateKey: targetDateKey,
+      capturedAt: now,
+      source: input.source || 'manual',
+      ...(submissionId ? { clientSubmissionId: submissionId } : {}),
+      vitals: validatedVitals,
+      context: evaluation.context,
+      overallStatus: evaluation.overallStatus,
+      readinessScore: evaluation.readinessScore,
+      coveragePct: evaluation.coverage.coveragePct,
+      qualityTier: evaluation.quality.tier,
+      crossConclusionId: evaluation.crossConclusionId,
+    };
+
+    user.observations.push(observation);
+    if (user.observations.length > MAX_OBSERVATIONS_ARCHIVE) {
+      user.observations = user.observations.slice(-MAX_OBSERVATIONS_ARCHIVE);
+    }
+
     const existingIndex = user.history.findIndex((item) => item.dateKey === targetDateKey);
     let savedEntry: CheckinEntry;
     let consolidated = false;
@@ -102,6 +151,10 @@ export async function saveUserCheckin(input: {
         updatesCount: (prev.updatesCount || 1) + 1,
         clientSubmissionId: submissionId ?? prev.clientSubmissionId,
         vitals: validatedVitals,
+        context: evaluation.context,
+        coveragePct: evaluation.coverage.coveragePct,
+        qualityTier: evaluation.quality.tier,
+        observationIds: [...(prev.observationIds ?? [prev.id]), observationId],
         overallStatus: evaluation.overallStatus,
         readinessScore: evaluation.readinessScore,
         crossConclusionId: evaluation.crossConclusionId,
@@ -111,13 +164,17 @@ export async function saveUserCheckin(input: {
       user.history[existingIndex] = savedEntry;
     } else {
       savedEntry = {
-        id: `${user.id}-${targetDateKey}-${crypto.randomUUID().slice(0, 8)}`,
+        id: observationId,
         dateKey: targetDateKey,
         dayLabel: targetDateKey,
         timestamp: now,
         updatesCount: 1,
         ...(submissionId ? { clientSubmissionId: submissionId } : {}),
         vitals: validatedVitals,
+        context: evaluation.context,
+        coveragePct: evaluation.coverage.coveragePct,
+        qualityTier: evaluation.quality.tier,
+        observationIds: [observationId],
         overallStatus: evaluation.overallStatus,
         readinessScore: evaluation.readinessScore,
         crossConclusionId: evaluation.crossConclusionId,
@@ -133,6 +190,7 @@ export async function saveUserCheckin(input: {
     }
 
     user.currentVitals = validatedVitals;
+    user.currentContext = evaluation.context;
     user.lastCheckinAt = now;
 
     await attemptCheckinRemoteSync(db, user.id, savedEntry);

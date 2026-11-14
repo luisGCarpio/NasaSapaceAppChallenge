@@ -3,8 +3,10 @@ import path from 'node:path';
 import { createDefaultSyncMeta, createSeedDatabase } from './seed-data';
 import type { DbState } from './types';
 
-export const MAX_HISTORY_DAYS = 10;
-export const MAX_COMMS_LOG = 30;
+export const MAX_HISTORY_DAYS = 365;
+export const MAX_OBSERVATIONS_ARCHIVE = 730;
+export const MAX_CHART_WINDOW_DAYS = 14;
+export const MAX_COMMS_LOG = 50;
 
 const DEFAULT_DB_RELATIVE = path.join('data', 'ares-db.json');
 

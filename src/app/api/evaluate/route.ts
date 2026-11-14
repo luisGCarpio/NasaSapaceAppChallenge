@@ -7,7 +7,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!bodyResult.ok) return bodyResult.response;
 
   const rawVitals = 'vitals' in bodyResult.data ? bodyResult.data.vitals : bodyResult.data;
-  const evaluation = evaluateHealth(rawVitals);
+  const rawContext = 'context' in bodyResult.data ? bodyResult.data.context : undefined;
+  const evaluation = evaluateHealth(rawVitals, { context: rawContext as never });
 
   if (!evaluation.valid) {
     return NextResponse.json(

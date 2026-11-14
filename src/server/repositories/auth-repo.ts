@@ -115,8 +115,10 @@ export async function registerUser(rawInput: unknown): Promise<AuthActionResult>
       name,
       role: role || 'Astronauta — Tripulación A.R.E.S.',
       currentVitals: null,
+      currentContext: null,
       lastCheckinAt: null,
       history: [],
+      observations: [],
       commsLog: [],
       gamification: createInitialGamification(),
     };
