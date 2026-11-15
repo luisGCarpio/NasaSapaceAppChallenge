@@ -2,7 +2,7 @@ import type { ObservationContext } from '../nasa/nasa-types';
 import type { BaselineMap } from './baseline-analyzer';
 import type { CoverageSummary } from './context-specs';
 import { makeRuleTrace, type RuleAuditTrace } from './rules-catalog';
-import { elevateStatus, pickFinite, type SystemEvalOutput } from './system-mind-body';
+import { canOverrideAction, elevateStatus, pickFinite, type SystemEvalOutput } from './system-mind-body';
 import {
   ACTIONS,
   ActionRecommendation,
@@ -67,10 +67,12 @@ export function evaluateBody(
         sourceKey: 'medline_fever',
       }));
     } else if (temp >= 37.5 || temp < 35.8) {
+      if (canOverrideAction(status, STATUS.YELLOW)) {
+        chosenAction = ACTIONS.ISOLATE;
+        ref = REFERENCES.FEVER;
+      }
       status = elevateStatus(status, STATUS.YELLOW);
       reasons.push(temp >= 37.5 ? `Febrícula (${temp} °C).` : `Temperatura baja (${temp} °C < 35.8 °C).`);
-      chosenAction = ACTIONS.ISOLATE;
-      ref = REFERENCES.FEVER;
       traces.push(makeRuleTrace({
         ruleId: 'BODY_TEMP_WATCH',
         title: 'Temperatura limítrofe',
@@ -103,15 +105,19 @@ export function evaluateBody(
         sourceKey: 'niddk_glucose',
       }));
     } else if (gluc < 70) {
+      if (canOverrideAction(status, STATUS.YELLOW)) {
+        chosenAction = ACTIONS.REVIEW_INPUT;
+        ref = REFERENCES.GLUCOSE;
+      }
       status = elevateStatus(status, STATUS.YELLOW);
       reasons.push(`Glucemia baja (${gluc} mg/dL < 70). Confirmar contexto/síntomas.`);
-      chosenAction = ACTIONS.REVIEW_INPUT;
-      ref = REFERENCES.GLUCOSE;
     } else if ((isFasting && gluc >= 100) || (!isFasting && gluc >= 140)) {
+      if (canOverrideAction(status, STATUS.YELLOW)) {
+        chosenAction = ACTIONS.REVIEW_INPUT;
+        ref = REFERENCES.GLUCOSE;
+      }
       status = elevateStatus(status, STATUS.YELLOW);
       reasons.push(isFasting ? `Glucemia en ayunas elevada (${gluc} mg/dL >= 100).` : `Glucemia elevada (${gluc} mg/dL; contexto: ${context.glucoseTiming}).`);
-      chosenAction = ACTIONS.REVIEW_INPUT;
-      ref = REFERENCES.GLUCOSE;
       traces.push(makeRuleTrace({
         ruleId: 'BODY_GLUCOSE_ELEVATED',
         title: 'Glucemia elevada contextualizada según ayuno',

@@ -49,13 +49,21 @@ export function assessQuality(opts: {
 
   const gluc = typeof vitals.glucose === 'number' ? vitals.glucose : undefined;
   const hr = typeof vitals.heart_rate === 'number' ? vitals.heart_rate : undefined;
+  const isActive = context.activityState === 'post_exercise' || context.activityState === 'eva';
+  const contextComplete = context.glucoseTiming !== 'unknown' || gluc === undefined;
+  const hasAmbiguousGlucose =
+    gluc !== undefined && context.glucoseTiming === 'unknown' && (gluc >= 100 || gluc < 70);
 
-  if (gluc !== undefined && gluc >= 100 && context.glucoseTiming === 'unknown') {
-    reasons.push('Glucemia >=100 mg/dL sin especificar ayuno vs postprandial.');
+  if (hasAmbiguousGlucose) {
+    reasons.push(
+      gluc >= 100
+        ? 'Glucemia >=100 mg/dL sin especificar ayuno vs postprandial.'
+        : 'Glucemia <70 mg/dL sin especificar ayuno vs postprandial.'
+    );
     needsRecheck = true;
-    recheckWindow = 'Confirmar en próximo ayuno (>=8 h)';
+    recheckWindow = gluc >= 100 ? 'Confirmar en próximo ayuno (>=8 h)' : 'Confirmar glucemia capilar en 15 min';
   }
-  if (hr !== undefined && hr > 100 && (context.activityState === 'post_exercise' || context.activityState === 'eva')) {
+  if (hr !== undefined && hr > 100 && isActive) {
     reasons.push('FC elevada post-esfuerzo; requiere lectura basal en reposo.');
     needsRecheck = true;
     recheckWindow = '5 min en reposo sentado';
@@ -71,14 +79,19 @@ export function assessQuality(opts: {
 
   let tier: QualityTier = 'provisional';
   if (
-    (gluc !== undefined && gluc >= 100 && context.glucoseTiming === 'unknown') ||
-    (hr !== undefined && hr > 100 && (context.activityState === 'post_exercise' || context.activityState === 'eva')) ||
+    hasAmbiguousGlucose ||
+    (hr !== undefined && hr > 100 && isActive) ||
     (overallStatus === STATUS.RED && !context.confirmedRepeated)
   ) {
     tier = 'contextual_pending';
   } else if (coverage.presentCount < 4) {
     tier = 'incomplete';
-  } else if (coverage.presentCount >= 5 && (overallStatus === STATUS.GREEN || context.confirmedRepeated)) {
+  } else if (
+    coverage.presentCount >= 5 &&
+    contextComplete &&
+    !needsRecheck &&
+    (overallStatus === STATUS.GREEN || context.confirmedRepeated)
+  ) {
     tier = 'verified';
   }
 
@@ -93,7 +106,7 @@ export function assessQuality(opts: {
     tier,
     label: labels[tier],
     reasons,
-    contextComplete: context.glucoseTiming !== 'unknown' || gluc === undefined,
+    contextComplete,
     confirmedRepeated: context.confirmedRepeated,
     needsRecheck,
     recheckWindow,
@@ -106,20 +119,24 @@ export function deriveClinicalRestrictions(
   overallStatus: HealthStatus
 ): ClinicalRestrictions {
   const reasons: string[] = [];
+  const isActive = context.activityState === 'post_exercise' || context.activityState === 'eva';
+  const isTilt = context.activityState === 'orthostatic_tilt' || context.posture === 'standing_tilt';
+  const sbp = typeof vitals.bp_systolic === 'number' ? vitals.bp_systolic : undefined;
+  const dbp = typeof vitals.bp_diastolic === 'number' ? vitals.bp_diastolic : undefined;
+
   if (overallStatus === STATUS.RED) reasons.push('Alerta clínica de prioridad alta activa.');
   if (typeof vitals.temperature === 'number' && vitals.temperature >= 37.7) {
     reasons.push(`Temperatura elevada (${vitals.temperature} °C).`);
   }
-  if (typeof vitals.heart_rate === 'number' && vitals.heart_rate >= 105 && context.activityState === 'rest') {
+  if (!isActive && !isTilt && typeof vitals.heart_rate === 'number' && vitals.heart_rate >= 105) {
     reasons.push(`Taquicardia en reposo (${vitals.heart_rate} lpm).`);
   }
   if (typeof vitals.glucose === 'number' && vitals.glucose < 70) {
     reasons.push(`Glucemia baja (${vitals.glucose} mg/dL).`);
   }
-  if (
-    (typeof vitals.bp_systolic === 'number' && vitals.bp_systolic >= 160) ||
-    (typeof vitals.bp_diastolic === 'number' && vitals.bp_diastolic >= 100)
-  ) {
+  if ((sbp !== undefined && sbp >= 180) || (dbp !== undefined && dbp >= 120)) {
+    reasons.push('Crisis hipertensiva >=180/120 mmHg.');
+  } else if (!isActive && ((sbp !== undefined && sbp >= 160) || (dbp !== undefined && dbp >= 100))) {
     reasons.push('Presión arterial elevada >=160/100 mmHg.');
   }
   return { restrictStrenuousExercise: reasons.length > 0, reasons };

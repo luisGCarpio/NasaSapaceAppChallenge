@@ -46,6 +46,7 @@ export function evaluateCrosses(
 
   const isTilt = context.activityState === 'orthostatic_tilt' || context.posture === 'standing_tilt';
   const isActive = context.activityState === 'post_exercise' || context.activityState === 'eva';
+  const hasCvSymptoms = context.symptoms.some((s) => /mareo|palpit/i.test(s));
 
   if (temp !== undefined && temp >= 37.5 && hr !== undefined && hr >= 95) {
     const isRed = temp >= 38.0 || hr >= 115;
@@ -70,8 +71,12 @@ export function evaluateCrosses(
     });
   }
 
-  if (hr !== undefined && sbp !== undefined && hr >= 100 && sbp < 98) {
-    const severe = sbp < 88 || hr >= 120 || context.symptoms.some((s) => /mareo/i.test(s));
+  if (hr !== undefined && sbp !== undefined && hr >= 100 && sbp < 98 && (!isActive || sbp < 90)) {
+    const severe =
+      sbp < 88 ||
+      (!isActive && !isTilt && hr >= 120) ||
+      ((isActive || isTilt) && hr >= 165) ||
+      hasCvSymptoms;
     triggered.push({
       id: 'orthostatic_fluid_strain',
       status: severe ? STATUS.RED : STATUS.YELLOW,

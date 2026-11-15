@@ -2,7 +2,7 @@ import type { ObservationContext } from '../nasa/nasa-types';
 import type { BaselineMap } from './baseline-analyzer';
 import type { CoverageSummary } from './context-specs';
 import { makeRuleTrace, type RuleAuditTrace } from './rules-catalog';
-import { elevateStatus, pickFinite, type SystemEvalOutput } from './system-mind-body';
+import { canOverrideAction, elevateStatus, pickFinite, type SystemEvalOutput } from './system-mind-body';
 import {
   ACTIONS,
   ActionRecommendation,
@@ -89,9 +89,11 @@ export function evaluateHeart(
       reasons.push(`Hipertensión marcada en reposo (${sbp}/${dbp} mmHg).`);
       chosenAction = ACTIONS.COMMS;
     } else if (sbp >= 130 || dbp >= 85 || sbp < 90 || dbp < 55) {
+      if (canOverrideAction(status, STATUS.YELLOW)) {
+        chosenAction = isActive ? ACTIONS.BREATHE : ACTIONS.REVIEW_INPUT;
+      }
       status = elevateStatus(status, STATUS.YELLOW);
       reasons.push(sbp < 90 || dbp < 55 ? `PA limítrofe baja (${sbp}/${dbp} mmHg).` : `PA elevada (${sbp}/${dbp} mmHg${isActive ? ' post-esfuerzo' : ''}).`);
-      chosenAction = isActive ? ACTIONS.BREATHE : ACTIONS.REVIEW_INPUT;
       traces.push(makeRuleTrace({
         ruleId: 'HEART_BP_BORDERLINE',
         title: 'Presión fuera de rango óptimo AHA',
@@ -122,9 +124,9 @@ export function evaluateHeart(
         sourceKey: isTilt ? 'nasa_orthostatic' : 'nasa_standards',
       }));
     } else if (isTilt && hr > 100) {
+      if (canOverrideAction(status, STATUS.YELLOW)) chosenAction = ACTIONS.HYDRATE;
       status = elevateStatus(status, STATUS.YELLOW);
       reasons.push(`Respuesta taquicárdica en prueba vertical/tilt (${hr} lpm).`);
-      chosenAction = ACTIONS.HYDRATE;
       traces.push(makeRuleTrace({
         ruleId: 'HEART_HR_ORTHOSTATIC_TILT',
         title: 'Estrés taquicárdico durante prueba ortostática Tilt',
@@ -136,17 +138,17 @@ export function evaluateHeart(
         sourceKey: 'nasa_orthostatic',
       }));
     } else if (isActive && hr > 100) {
+      if (canOverrideAction(status, STATUS.YELLOW)) chosenAction = ACTIONS.BREATHE;
       status = elevateStatus(status, STATUS.YELLOW);
       reasons.push(`FC elevada post-esfuerzo (${hr} lpm); requiere control en reposo.`);
-      chosenAction = ACTIONS.BREATHE;
     } else if (!isActive && !isTilt && (hr > 100 || hr < 50)) {
+      if (canOverrideAction(status, STATUS.YELLOW)) chosenAction = ACTIONS.BREATHE;
       status = elevateStatus(status, STATUS.YELLOW);
       reasons.push(hr > 100 ? `Taquicardia leve en reposo (${hr} lpm).` : `Bradicardia leve en reposo (${hr} lpm).`);
-      chosenAction = ACTIONS.BREATHE;
     } else if (!isActive && !isTilt && hrBase?.significantDrift && (hrBase.deltaFromMedian ?? 0) >= 15) {
+      if (canOverrideAction(status, STATUS.YELLOW)) chosenAction = ACTIONS.HYDRATE;
       status = elevateStatus(status, STATUS.YELLOW);
       reasons.push(`FC elevada sobre tu mediana personal (${hr} vs ${hrBase.median} lpm).`);
-      chosenAction = ACTIONS.HYDRATE;
     }
   }
 

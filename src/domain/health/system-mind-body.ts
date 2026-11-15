@@ -25,6 +25,14 @@ export function elevateStatus(current: HealthStatus, next: HealthStatus): Health
   return STATUS_RANK[next] > STATUS_RANK[current] ? next : current;
 }
 
+/**
+ * Only allow an equal-or-higher severity rule to overwrite a system's chosenAction / reference,
+ * so a subsequent YELLOW rule never downgrades an already-established RED action.
+ */
+export function canOverrideAction(current: HealthStatus, ruleStatus: HealthStatus): boolean {
+  return STATUS_RANK[ruleStatus] >= STATUS_RANK[current];
+}
+
 export function pickFinite(v: number | null | undefined): number | undefined {
   return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
 }
@@ -104,9 +112,11 @@ export function evaluateMind(
       reasons.push('Estado anímico reportado: agotado.');
       chosenAction = ACTIONS.SLEEP;
     } else if (mood === 'cansado' || mood === 'estresado') {
+      if (canOverrideAction(status, STATUS.YELLOW)) {
+        chosenAction = ACTIONS.BREATHE;
+      }
       status = elevateStatus(status, STATUS.YELLOW);
       reasons.push(`Carga subjetiva reportada: ${mood}.`);
-      chosenAction = ACTIONS.BREATHE;
     }
   }
 

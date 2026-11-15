@@ -75,15 +75,24 @@ export const DEFAULT_CONTEXT: ObservationContext = {
   symptoms: [],
 };
 
+const VALID_ACTIVITY_STATES = new Set<ActivityState>(['rest', 'post_exercise', 'eva', 'orthostatic_tilt']);
+const VALID_POSTURE_STATES = new Set<PostureState>(['supine', 'seated', 'standing_tilt', 'unknown']);
+const VALID_GLUCOSE_TIMINGS = new Set<GlucoseTiming>(['fasting', 'post_meal', 'random', 'unknown']);
+const VALID_TEMP_METHODS = new Set<TempMethod>(['oral', 'tympanic', 'core_sensor', 'unknown']);
+
+function pickValidEnum<T extends string>(value: unknown, allowed: Set<T>, fallback: T): T {
+  return typeof value === 'string' && allowed.has(value as T) ? (value as T) : fallback;
+}
+
 export function normalizeContext(raw?: Partial<ObservationContext> | null): ObservationContext {
   const symptoms = Array.isArray(raw?.symptoms)
     ? raw.symptoms.map((s) => String(s).trim()).filter(Boolean).slice(0, 10)
     : [];
   return {
-    activityState: raw?.activityState ?? DEFAULT_CONTEXT.activityState,
-    posture: raw?.posture ?? DEFAULT_CONTEXT.posture,
-    glucoseTiming: raw?.glucoseTiming ?? DEFAULT_CONTEXT.glucoseTiming,
-    tempMethod: raw?.tempMethod ?? DEFAULT_CONTEXT.tempMethod,
+    activityState: pickValidEnum(raw?.activityState, VALID_ACTIVITY_STATES, DEFAULT_CONTEXT.activityState),
+    posture: pickValidEnum(raw?.posture, VALID_POSTURE_STATES, DEFAULT_CONTEXT.posture),
+    glucoseTiming: pickValidEnum(raw?.glucoseTiming, VALID_GLUCOSE_TIMINGS, DEFAULT_CONTEXT.glucoseTiming),
+    tempMethod: pickValidEnum(raw?.tempMethod, VALID_TEMP_METHODS, DEFAULT_CONTEXT.tempMethod),
     confirmedRepeated: Boolean(raw?.confirmedRepeated),
     symptoms,
     studyNote: raw?.studyNote ? String(raw.studyNote).trim() : undefined,

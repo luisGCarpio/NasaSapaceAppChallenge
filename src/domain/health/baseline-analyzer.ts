@@ -69,6 +69,27 @@ function computeQuantiles(values: number[]): { median: number; iqr: number; mad:
   };
 }
 
+function sortObservationsChronologically(
+  observations: PriorObservationInput[]
+): PriorObservationInput[] {
+  return observations
+    .map((obs, idx) => ({ obs, idx }))
+    .sort((a, b) => {
+      const aOrder = typeof a.obs.sortOrder === 'number' && Number.isFinite(a.obs.sortOrder) ? a.obs.sortOrder : null;
+      const bOrder = typeof b.obs.sortOrder === 'number' && Number.isFinite(b.obs.sortOrder) ? b.obs.sortOrder : null;
+      if (aOrder !== null && bOrder !== null && aOrder !== bOrder) {
+        return aOrder - bOrder;
+      }
+      const aTime = a.obs.capturedAt ? Date.parse(a.obs.capturedAt) : Number.NaN;
+      const bTime = b.obs.capturedAt ? Date.parse(b.obs.capturedAt) : Number.NaN;
+      if (Number.isFinite(aTime) && Number.isFinite(bTime) && aTime !== bTime) {
+        return aTime - bTime;
+      }
+      return a.idx - b.idx;
+    })
+    .map((entry) => entry.obs);
+}
+
 function isComparableForBaseline(
   obs: PriorObservationInput,
   key: NumericVitalKey,
@@ -76,17 +97,37 @@ function isComparableForBaseline(
 ): boolean {
   if (obs.overallStatus === 'RED') return false;
   const ctx = obs.context;
-  if (!ctx) return true;
+
   if (key === 'heart_rate' || key === 'bp_systolic' || key === 'bp_diastolic') {
-    const priorActive = ctx.activityState && ctx.activityState !== 'rest';
-    const priorStanding = ctx.posture === 'standing_tilt';
-    if (currentContext.activityState === 'rest' && (priorActive || priorStanding)) {
+    const currentIsTilt =
+      currentContext.activityState === 'orthostatic_tilt' ||
+      currentContext.posture === 'standing_tilt';
+    const currentIsActive =
+      currentContext.activityState === 'post_exercise' ||
+      currentContext.activityState === 'eva';
+
+    if (!ctx) {
+      return !currentIsTilt && !currentIsActive;
+    }
+
+    const priorIsTilt =
+      ctx.activityState === 'orthostatic_tilt' || ctx.posture === 'standing_tilt';
+    const priorIsActive =
+      ctx.activityState === 'post_exercise' || ctx.activityState === 'eva';
+
+    if (!currentIsTilt && !currentIsActive) {
+      if (priorIsTilt || priorIsActive) return false;
+    } else if (currentIsTilt) {
+      if (!priorIsTilt) return false;
+    } else if (ctx.activityState !== currentContext.activityState) {
       return false;
     }
   }
+
   if (key === 'glucose' && currentContext.glucoseTiming === 'fasting') {
-    if (ctx.glucoseTiming === 'post_meal') return false;
+    if (!ctx || ctx.glucoseTiming !== 'fasting') return false;
   }
+
   return true;
 }
 
@@ -110,12 +151,13 @@ export function analyzePersonalBaselines(
   priorObservations: PriorObservationInput[] = []
 ): BaselineMap {
   const result: BaselineMap = {};
+  const orderedPriors = sortObservationsChronologically(priorObservations);
 
   for (const key of NUMERIC_KEYS) {
     const current = currentVitals[key];
     if (typeof current !== 'number' || !Number.isFinite(current)) continue;
 
-    const cleanHistory = priorObservations
+    const cleanHistory = orderedPriors
       .filter((obs) => isComparableForBaseline(obs, key, currentContext))
       .map((obs) => obs.vitals[key])
       .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
