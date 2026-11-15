@@ -35,8 +35,6 @@ interface NasaTabPanelProps {
     timeline: NasaTimelinePoint[]
   ) => void;
   onClearReplay: () => void;
-  onPingEarth?: () => void;
-  onGoToControls?: () => void;
 }
 
 export function NasaTabPanel({
@@ -47,8 +45,6 @@ export function NasaTabPanel({
   activeObservationId,
   onLoadPointToAstronaut,
   onClearReplay,
-  onPingEarth,
-  onGoToControls,
 }: NasaTabPanelProps) {
   const [inventory, setInventory] = useState<NasaAuditInventory | null>(() => cachedCatalog?.inventory ?? null);
   const [benchmark, setBenchmark] = useState<BenchmarkMetrics | null>(() => cachedCatalog?.benchmark ?? null);
@@ -214,8 +210,7 @@ export function NasaTabPanel({
         vitals={vitals}
         evaluation={evaluation}
         context={context}
-        onPingEarth={onPingEarth}
-        onGoToControls={onGoToControls}
+        variant="cohort-only"
       />
 
       <details className="nasa-details">

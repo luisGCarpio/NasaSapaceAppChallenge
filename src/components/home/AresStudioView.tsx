@@ -1,17 +1,37 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { AresIcon } from '@/components/ui/Icons';
-import { XP_PER_LEVEL } from '@/domain/missions/mission-catalog';
+import './studio/nasa-panel.css';
+import './studio/mission-modal.css';
 import { AstroTabPanel } from './studio/AstroTabPanel';
 import { AstroStageCard } from './studio/AstroStageCard';
 import { ControlsTabPanel } from './studio/ControlsTabPanel';
 import { MissionsTabPanel } from './studio/MissionsTabPanel';
-import { MonitorTabPanel } from './studio/MonitorTabPanel';
-import { NasaTabPanel } from './studio/NasaTabPanel';
 import type { TabKey } from './studio/studio-types';
-import { STUDIO_NAV_ITEMS } from './studio/StudioNavSvg';
+import { STUDIO_NAV_ITEMS, StudioNavIcon } from './studio/StudioNavSvg';
 import { useAresStudio } from './studio/useAresStudio';
+
+const TabLoadingFallback = () => (
+  <div className="card empty-message" aria-busy="true">
+    Cargando panel...
+  </div>
+);
+
+const MonitorTabPanel = dynamic(
+  () => import('./studio/MonitorTabPanel').then((mod) => mod.MonitorTabPanel),
+  { loading: TabLoadingFallback }
+);
+
+const NasaTabPanel = dynamic(
+  () => import('./studio/NasaTabPanel').then((mod) => mod.NasaTabPanel),
+  { loading: TabLoadingFallback }
+);
+
+const MissionActionModal = dynamic(
+  () => import('./studio/MissionActionModal').then((mod) => mod.MissionActionModal),
+  { ssr: false }
+);
 
 interface AresStudioViewProps {
   initialTab?: TabKey;
@@ -20,92 +40,75 @@ interface AresStudioViewProps {
 export function AresStudioView({ initialTab = 'astro' }: AresStudioViewProps) {
   const s = useAresStudio(initialTab);
   const activeNav = STUDIO_NAV_ITEMS.find((item) => item.key === s.tab);
-  const breathPhase =
-    s.breathSec > 6 ? 'Inhala suave...' : s.breathSec > 3 ? 'Sostén...' : 'Exhala lento...';
-  const authError = 'authError' in s ? (s as { authError?: string | null }).authError : null;
-  const refreshAction =
-    'refreshState' in s && typeof (s as { refreshState?: unknown }).refreshState === 'function'
-      ? () => void (s as { refreshState: () => Promise<void> }).refreshState()
-      : () => window.location.reload();
+  const isAstroTab = s.tab === 'astro';
+  const isControlsTab = s.tab === 'controls';
+  const isMissionsTab = s.tab === 'missions';
+  const isCleanTopbar = isControlsTab || isMissionsTab;
+  const isModalOpen = Boolean(s.activeMissionScene);
+  const showToast = Boolean(s.toastMsg) && s.activeMissionScene?.actionId !== 'comms';
+  const doneCount = isControlsTab
+    ? 0
+    : s.missions.filter((mission) => mission.completed || s.completedLocalIds.includes(mission.id)).length;
+  const authError = s.authError;
+  const refreshAction = () => void s.refreshState();
 
-  const modalRef = useRef<HTMLDivElement | null>(null);
-  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    if (!s.breathOpen) {
-      previousFocusRef.current?.focus();
-      previousFocusRef.current = null;
-      return;
-    }
-
-    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const focusTimer = setTimeout(() => {
-      closeBtnRef.current?.focus();
-    }, 0);
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        s.setBreathOpen(false);
-        return;
-      }
-      if (event.key === 'Tab' && modalRef.current) {
-        const focusables = modalRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusables.length === 0) return;
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      clearTimeout(focusTimer);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [s.breathOpen, s.setBreathOpen]);
+  const authRetryBanner = authError ? (
+    <>
+      <span className="session-pill" style={{ background: 'var(--red-bg)' }}>
+        {authError}
+      </span>
+      <button type="button" className="btn-tactile" onClick={refreshAction}>
+        Reintentar
+      </button>
+    </>
+  ) : null;
+  const showCleanTopbarAuth = isMissionsTab ? Boolean(!s.state && authRetryBanner) : Boolean(authRetryBanner);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <header className="topbar">
-        <div className="brand">
-          <div className="brand-badge"><AresIcon name="user" size={24} /></div>
-          <div>
-            <span className="brand-title">ARES Orbit</span>
-            <p>Chequeo Médico del Astronauta</p>
-          </div>
-        </div>
-        <div className="topbar-right">
-          {s.state ? (
-            <>
-              <span className="session-pill"><AresIcon name="user" size={16} /> {s.state.user.name}</span>
-              <span className="val-pill">
-                Nv. {s.state.gamification.level} · {s.state.gamification.xpProgressInLevel}/{XP_PER_LEVEL} XP
-              </span>
-              <span className="val-pill"><AresIcon name="activity" size={16} /> {s.state.gamification.streak}d</span>
-            </>
-          ) : authError ? (
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              <span className="session-pill" style={{ background: 'var(--red-bg)' }}>
-                {authError}
-              </span>
-              <button type="button" className="btn-tactile" onClick={refreshAction}>
-                Reintentar
-              </button>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+      <div inert={isModalOpen} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <header className={`topbar${isAstroTab ? ' topbar-astro' : isCleanTopbar ? ' topbar-astro topbar-clean' : ''}`}>
+          <div className="brand">
+            <div className="brand-badge"><AresIcon name="user" size={24} /></div>
+            <div>
+              <span className="brand-title">ARES Orbit</span>
             </div>
+          </div>
+          {isCleanTopbar ? (
+            showCleanTopbarAuth ? (
+              <div className="topbar-right">
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+                  {authRetryBanner}
+                </div>
+              </div>
+            ) : null
           ) : (
-            <span className="session-pill">Cargando bitácora local...</span>
-          )}
-        </div>
+          <div className="topbar-right">
+            {s.state ? (
+              <>
+                {!isAstroTab ? (
+                  <span className="session-pill topbar-user-pill">
+                    <AresIcon name="user" size={16} /> {s.state.user.name}
+                  </span>
+                ) : null}
+                <span className="val-pill">
+                  Protocolos {doneCount}/{s.missions.length}
+                </span>
+                {!isAstroTab ? (
+                  <span className="val-pill">
+                    <AresIcon name="activity" size={16} /> {s.state.gamification.streak}d
+                  </span>
+                ) : null}
+              </>
+            ) : authRetryBanner ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+                {authRetryBanner}
+              </div>
+            ) : (
+              <span className="session-pill">Cargando bitácora local...</span>
+            )}
+          </div>
+        )}
       </header>
 
       <div className="app-layout">
@@ -114,7 +117,6 @@ export function AresStudioView({ initialTab = 'astro' }: AresStudioViewProps) {
             <div className="brand-badge"><AresIcon name="user" size={24} /></div>
             <div>
               <span className="brand-title">ARES Orbit</span>
-              <p>Chequeo del astronauta</p>
             </div>
           </div>
           {STUDIO_NAV_ITEMS.map((item) => (
@@ -125,28 +127,55 @@ export function AresStudioView({ initialTab = 'astro' }: AresStudioViewProps) {
               aria-current={s.tab === item.key ? 'page' : undefined}
               onClick={() => s.switchTab(item.key)}
             >
-              {item.icon}
+              <StudioNavIcon tab={item.key} active={s.tab === item.key} />
               <span>{item.label}</span>
             </button>
           ))}
-          {s.tab !== 'astro' && (
-            <div className="sidebar-astronaut">
-              <AstroStageCard
-                evaluation={s.evaluation}
-                vitals={s.activeVitals}
-                onHighlightSystem={s.handleHighlightSystem}
-              />
-            </div>
+          {isAstroTab ? (
+            s.state ? (
+              <div className="sidebar-status">
+                <span className="val-pill">
+                  Protocolos {doneCount}/{s.missions.length}
+                </span>
+              </div>
+            ) : authRetryBanner ? (
+              <div className="sidebar-status" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {authRetryBanner}
+              </div>
+            ) : null
+          ) : (
+            <>
+              {authRetryBanner ? (
+                <div className="sidebar-status" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {authRetryBanner}
+                </div>
+              ) : null}
+              <div className="sidebar-astronaut">
+                <AstroStageCard
+                  evaluation={s.evaluation}
+                  vitals={s.activeVitals}
+                  onHighlightSystem={s.handleHighlightSystem}
+                />
+              </div>
+            </>
           )}
         </nav>
 
-        <main className="view-container">
-          <h1 className="view-heading">{activeNav?.label ?? 'ARES Orbit'}</h1>
-          {s.tab === 'astro' ? (
+        <main id="main-content" className="view-container">
+          {isAstroTab ? (
+            <h1 className="sr-only">{activeNav?.label ?? 'Astronauta'}</h1>
+          ) : (
+            <h1 className="view-heading">
+              {isControlsTab ? 'Registrar signos' : (activeNav?.label ?? 'ARES Orbit')}
+            </h1>
+          )}
+          {isAstroTab ? (
             <AstroTabPanel
               evaluation={s.evaluation}
               vitals={s.activeVitals}
               context={s.context}
+              stressMode={s.stressMode}
+              onStressModeChange={s.setStressMode}
               activeSimulation={s.activeSimulation}
               activeNasaReplay={s.activeNasaReplay}
               hasSavedHistory={(s.state?.observations.length ?? 0) > 0}
@@ -154,10 +183,7 @@ export function AresStudioView({ initialTab = 'astro' }: AresStudioViewProps) {
               onClearReplayOrSim={s.handleClearReplayOrSim}
               onNavigateTab={s.switchTab}
               onActionMission={(id) => void s.handleCompleteMission(id)}
-              onOpenBreather={() => {
-                s.setBreathSec(10);
-                s.setBreathOpen(true);
-              }}
+              onOpenBreather={s.handleOpenBreather}
               onPingEarth={() => void s.handlePingEarth()}
             />
           ) : s.tab === 'controls' ? (
@@ -170,7 +196,7 @@ export function AresStudioView({ initialTab = 'astro' }: AresStudioViewProps) {
               userState={s.state}
               saving={s.saving}
               saveMessage={s.saveMessage}
-              isSimulationOrReplay={Boolean(s.activeSimulation || s.activeNasaReplay)}
+              isSimulationOrReplay={s.isSimulationOrReplay}
               onUpdateNumeric={s.handleUpdateNumeric}
               onUpdateMood={s.handleUpdateMood}
               onToggleSystemMeasured={s.handleToggleSystemMeasured}
@@ -193,18 +219,19 @@ export function AresStudioView({ initialTab = 'astro' }: AresStudioViewProps) {
               userState={s.state}
               missions={s.missions}
               completedLocalIds={s.completedLocalIds}
+              hydrationLevel={s.hydrationLevel}
+              exerciseStep={s.exerciseStep}
+              restNightActive={s.restNightActive}
+              breathRounds={s.breathRounds}
               commsSending={s.commsSending}
               commsSentAt={s.commsSentAt}
               onCompleteMission={(id) => void s.handleCompleteMission(id)}
-              onOpenBreather={() => {
-                s.setBreathSec(10);
-                s.setBreathOpen(true);
-              }}
-              onResetMissions={() => {
-                s.setCompletedLocalIds([]);
-                if (s.state) void s.resetMissions();
-              }}
-              onPingEarth={() => void s.handlePingEarth()}
+              onAdvanceExercise={() => void s.handleAdvanceExercise()}
+              onToggleRest={() => void s.handleToggleRest()}
+              onCompleteBreathRound={() => void s.handleCompleteBreathRound()}
+              onOpenBreather={s.handleOpenBreather}
+              onResetMissions={() => void s.resetMissions()}
+              onPingEarth={() => void s.handlePingEarth({ openScene: true })}
             />
           ) : (
             <NasaTabPanel
@@ -215,8 +242,6 @@ export function AresStudioView({ initialTab = 'astro' }: AresStudioViewProps) {
               activeObservationId={s.nasaObsId}
               onLoadPointToAstronaut={s.handleLoadReplayPoint}
               onClearReplay={s.handleClearReplayOrSim}
-              onPingEarth={() => void s.handlePingEarth()}
-              onGoToControls={() => s.switchTab('controls')}
             />
           )}
         </main>
@@ -231,41 +256,42 @@ export function AresStudioView({ initialTab = 'astro' }: AresStudioViewProps) {
             aria-current={s.tab === item.key ? 'page' : undefined}
             onClick={() => s.switchTab(item.key)}
           >
-            {item.icon}
+            <StudioNavIcon tab={item.key} active={s.tab === item.key} />
             <span>{item.mobileLabel}</span>
           </button>
         ))}
       </nav>
-
-      <div
-        className={`breath-overlay${s.breathOpen ? ' open' : ''}`}
-        role="dialog"
-        aria-modal="true"
-        aria-hidden={!s.breathOpen}
-        aria-label="Pausa Orbital"
-        onClick={(event) => {
-          if (event.target === event.currentTarget) {
-            s.setBreathOpen(false);
-          }
-        }}
-      >
-        <div className="breath-modal" ref={modalRef}>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: 6 }}>Pausa para respirar</h3>
-          <p style={{ fontSize: '0.84rem', color: 'var(--ink-muted)', fontWeight: 700 }}>{breathPhase}</p>
-          <div className="breath-orb">{s.breathSec}s</div>
-          <button
-            ref={closeBtnRef}
-            type="button"
-            className="btn-tactile"
-            onClick={() => s.setBreathOpen(false)}
-          >
-            Cerrar pausa
-          </button>
-        </div>
       </div>
 
-      <div className={`toast${s.toastMsg ? ' show' : ''}`} role="status" aria-live="polite">
-        {s.toastMsg ?? ''}
+      {s.activeMissionScene ? (
+        <MissionActionModal
+          key={s.activeMissionScene.key}
+          open={true}
+          actionId={s.activeMissionScene.actionId}
+          variant={s.activeMissionScene.variant}
+          copyContext={{
+            restrictionReason: s.activeMissionScene.restrictionReason ?? null,
+            overallStatus: s.evaluation.overallStatus,
+            readinessScore: s.evaluation.readinessScore,
+            copiedToClipboard: s.lastCommsCopied,
+            sentAt: s.commsSentAt,
+            commsSending: s.commsSending,
+            commsError: s.commsError,
+          }}
+          onClose={s.closeMissionScene}
+          onAnimatingComplete={(completedActionId) => {
+            if (completedActionId === 'breathe') {
+              void s.persistMissionCompletion('breathe');
+            }
+          }}
+          onGoToControls={() => s.switchTab('controls')}
+          onOpenBreatherFromBlocked={s.handleOpenBreather}
+          onRetryComms={() => void s.handlePingEarth()}
+        />
+      ) : null}
+
+      <div className={`toast${showToast ? ' show' : ''}`} role="status" aria-live="polite">
+        {showToast ? s.toastMsg : ''}
       </div>
     </div>
   );

@@ -2,6 +2,75 @@
   width: 24px;
   height: 24px;
   flex: none;
+  stroke: currentColor;
+  color: inherit;
+}
+
+.missions {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.missionsToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
+  min-width: 0;
+}
+
+.resetConfirmGroup {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.resetBtn,
+.resetConfirmBtn,
+.resetCancelBtn {
+  min-height: 44px;
+  min-width: 44px;
+  padding-block: 8px;
+  padding-inline: 14px;
+}
+
+.resetBtn {
+  padding-inline-start: 12px;
+}
+
+.resetBtnConfirm,
+.resetConfirmBtn {
+  background: var(--red-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.resetCancelBtn {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+@media (hover: hover) {
+  .resetBtnConfirm:not(:disabled):not([aria-disabled="true"]):hover,
+  .resetConfirmBtn:not(:disabled):not([aria-disabled="true"]):hover {
+    background-color: #FFD0D5;
+  }
+
+  .resetCancelBtn:not(:disabled):not([aria-disabled="true"]):hover {
+    background-color: var(--surface-alt);
+  }
+}
+
+.protocolStatus {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  line-height: 1.35;
 }
 
 .missionTitle {
@@ -9,33 +78,411 @@
   align-items: center;
   gap: 10px;
   text-align: left;
+  min-width: 0;
+  flex: 1 1 160px;
+}
+
+.cardHeaderMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.missionLabel {
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: left;
+  color: var(--ink);
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.recommendedTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--lavender-soft);
+  color: var(--periwinkle-dark);
+  border: 1.5px solid var(--periwinkle-dark);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.cardCopy {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+}
+
+.cardSub {
+  font-weight: 800;
+  font-size: 0.78rem;
+  line-height: 1.28;
+  overflow-wrap: break-word;
+}
+
+.cardStatusHydrate {
+  color: #0369A1;
+}
+
+.cardStatusDone {
+  color: #166534;
+}
+
+.cardStatusLocked {
+  color: var(--danger);
+}
+
+.hydratePips {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  width: 100%;
+}
+
+.hydratePip {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  border: 1px solid rgba(28, 25, 23, 0.25);
+  transition-property: background-color, border-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.hydratePipFilled {
+  background: #0EA5E9;
+  border-color: #0369A1;
+}
+
+.hydratePipDone {
+  background: var(--green);
+  border-color: #166534;
+}
+
+.cardActionCue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink);
+  background: var(--surface-alt);
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.cardActionCueDone {
+  background: var(--green-bg);
+  color: #166534;
+  border-color: #166534;
+}
+
+.cardActionCueLocked {
+  background: var(--surface);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.missionIconWrap {
+  width: clamp(96px, 10vw, 120px);
+  height: clamp(96px, 10vw, 120px);
+  padding: 6px;
+  margin-inline: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgba(28, 25, 23, 0.14);
+  border-radius: 16px;
+  background: var(--surface-alt);
+  color: var(--ink);
+  box-shadow: none;
+  transition-property: background-color, border-color, opacity;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.hydrateTankWrap {
+  width: clamp(96px, 10vw, 120px);
+  height: clamp(96px, 10vw, 120px);
+}
+
+.hydrateTankDone {
+  background: rgba(24, 201, 126, 0.14);
+  border-color: rgba(22, 101, 52, 0.28);
+}
+
+.hydrateTankSvg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.hydrateFaceMood {
+  transition-property: opacity;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.hydrateTankLiquid {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  transition-property: fill;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.hydrateTankMeniscus {
+  transition-property: opacity, stroke;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .missionIconWrap {
+    transition-property: transform, background-color, border-color, opacity;
+    transition-duration: 180ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .hydrateTankLiquid,
+  .hydrateTankMeniscus {
+    transition-property: transform, fill, opacity;
+    transition-duration: 240ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+.icon_hydrate {
+  background: #E0F2FE;
+  color: #0369A1;
+}
+
+.icon_exercise {
+  background: var(--yellow-bg);
+  color: #9A3412;
+}
+
+.icon_rest {
+  background: var(--lavender-soft);
+  color: var(--periwinkle-dark);
+}
+
+.icon_breathe {
+  background: var(--green-bg);
+  color: #047857;
+}
+
+.iconDone {
+  background: var(--green);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.iconLocked {
+  background: var(--surface-alt);
+  color: #475569;
+  box-shadow: none;
+  opacity: 1;
 }
 
 .missionTitle svg {
   flex: none;
 }
 
-.reportDetails {
-  margin: 0 0 14px;
+.earthBtn {
+  width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
+  min-height: 60px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  box-shadow: 0 4px 0 var(--ink);
+  text-align: left;
 }
 
-.reportDetails summary {
-  cursor: pointer;
+.earthBtn.earthSent,
+.earthBtn:global(.sent) {
+  background: var(--green);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.earthContent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.earthMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.earthStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.earthMetric {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
   font-weight: 700;
-  padding: 10px 0;
+  opacity: 0.95;
 }
 
-.reportDetails pre {
-  overflow-wrap: anywhere;
-  max-height: 280px;
-  overflow-y: auto;
+.earthHeadline {
+  font-family: var(--font-display), sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
-.caption {
-  color: var(--ink-muted);
-  font-size: 0.875rem;
-  margin-top: 10px;
-  line-height: 1.4;
+.earthTimestamp {
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.92;
+}
+
+.earthCtaIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  flex: none;
+}
+
+.earthDispatch {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  text-align: left;
+}
+
+.earthTelemetry,
+.earthDispatchInfo,
+.earthDispatchBody {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.earthDispatchTitle {
+  font-family: var(--font-display), sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.earthDispatchMeta,
+.earthDispatchSub {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.3;
+  opacity: 0.92;
+}
+
+.earthDispatchCta,
+.earthCtaPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .earthBtn:not(:disabled):not([aria-disabled="true"]):hover {
+    background-color: var(--periwinkle);
+  }
+
+  .earthBtn.earthSent:not(:disabled):not([aria-disabled="true"]):hover,
+  .earthBtn:global(.sent):not(:disabled):not([aria-disabled="true"]):hover {
+    background-color: #15B873;
+  }
+}
+
+.earthSignal {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.earthSignalDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--yellow);
+  border: 1.5px solid var(--ink);
+}
+
+.earthSignalRing {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 2px solid #FFF;
+  opacity: 0.65;
 }
 
 .controls :global(.control-label) {
@@ -52,20 +499,229 @@
 .controls :global(.measure-toggle),
 .controls :global(.chip-toggle),
 .controls :global(.context-select) {
-  min-height: 40px;
+  min-height: 44px;
   font-size: 0.875rem;
 }
 
+.missions :global(.missions-list) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto 4px;
+}
+
 .missions :global(.mission-btn) {
-  min-height: 54px;
+  position: relative;
+  aspect-ratio: auto;
+  min-height: 280px;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  padding: 14px;
+  border-width: 2.5px;
+  border-radius: 22px;
+  box-shadow: 0 4px 0 var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  text-align: left;
+  gap: 10px;
+}
+
+.missions :global(.mission-btn).hydrateCard:global(.locked) {
+  background: var(--red-bg);
+  border-style: dashed;
+  border-color: var(--ink);
+}
+
+.missions :global(.mission-btn).missionBtnHold:active,
+.missions :global(.mission-btn.missionBtnHold:active),
+.missions :global(.mission-btn.mission-btn--hold:active) {
+  scale: 1;
+}
+
+@media (hover: hover) {
+  .missions :global(.mission-btn:not(:disabled):not([aria-disabled="true"]):not(.locked):not(.done):hover) {
+    background-color: var(--surface-alt);
+    border-color: var(--periwinkle-dark);
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .missions :global(.mission-btn:not(:disabled):not([aria-disabled="true"]):not(.locked):not(.done):hover) {
+    transform: translateY(-2px);
+  }
+
+  .missions :global(.mission-btn:not(:disabled):not([aria-disabled="true"]):not(.locked):not(.done):hover) .missionIconWrap {
+    transform: scale(1.04);
+  }
+}
+
+.missions :global(.mission-btn.locked) {
+  background: var(--surface-alt);
+  border-style: dashed;
+  border-color: #475569;
+  color: var(--ink);
+  opacity: 1;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.missions :global(.mission-btn.locked) .cardSub {
+  color: var(--danger);
+}
+
+.missions :global(.mission-btn.locked) .hydrateTankWrap {
+  opacity: 1;
+}
+
+.missions :global(.mission-top) {
+  position: static;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.missions :global(.mission-xp) {
+  font-size: 0.75rem;
+  padding: 3px 9px;
+  border-radius: 11px;
+  flex: none;
+  white-space: nowrap;
+}
+
+.missions :global(.trace-box) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1159px) {
+  .missionsToolbar,
+  .earthBtn {
+    max-width: 680px;
+  }
+
+  .missions :global(.missions-list) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    max-width: 680px;
+  }
+
+  .missions :global(.mission-btn) {
+    padding: 14px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .controls :global(.context-select) {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .missionsToolbar,
+  .earthBtn {
+    max-width: 100%;
+  }
+
+  .earthDispatch {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .earthDispatchMeta,
+  .earthDispatchSub,
+  .earthMetric,
+  .earthTimestamp {
+    font-size: 0.75rem;
+  }
+
+  .missions :global(.missions-list) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    max-width: 100%;
+  }
+
+  .missions :global(.mission-btn) {
+    min-height: 248px;
+    padding: 12px 10px;
+    border-radius: 18px;
+    gap: 8px;
+  }
+
+  .missions :global(.mission-xp) {
+    font-size: 0.75rem;
+    padding: 2px 7px;
+    border-radius: 8px;
+  }
+
+  .missionLabel {
+    font-size: 0.875rem;
+    line-height: 1.18;
+  }
+
+  .cardSub {
+    font-size: 0.75rem;
+    line-height: 1.25;
+  }
+
+  .hydrateTankWrap {
+    width: 96px;
+    height: 96px;
+  }
 }
 
 @media (max-width: 480px) {
   .controls :global(.mood-grid) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .controls :global(.mood-btn) {
+    min-height: 52px;
+    font-size: 0.7rem;
+    padding: 8px 4px;
   }
 
   .controls :global(.control-label) > div {
     flex-wrap: wrap;
+  }
+}
+
+@media (forced-colors: active) {
+  .missions :global(.mission-btn.done),
+  .earthBtn.earthSent,
+  .earthBtn:global(.sent) {
+    border-style: solid;
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  .missions :global(.mission-btn.locked) {
+    border-style: dashed;
+    border-color: GrayText;
+    color: GrayText;
+  }
+
+  .earthSignalDot {
+    background: Highlight;
+  }
+
+  .earthDispatchCta,
+  .earthCtaPill {
+    border-color: ButtonText;
+  }
+
+  .resetBtnConfirm {
+    border-style: solid;
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
   }
 }

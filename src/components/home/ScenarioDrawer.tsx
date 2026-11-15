@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import type { ScenarioId } from '@/domain/health';
 import { useAres } from '@/context/AresContext';
-import { AresIcon } from '../ui/Icons';
 import { StatusBadge } from '../ui/StatusBadge';
 
 export function ScenarioDrawer() {
@@ -42,7 +41,7 @@ export function ScenarioDrawer() {
       aria-labelledby="sim-drawer-title"
     >
       <div className="flex h-full w-full max-w-md flex-col border-l border-[#1E2E4E] bg-[#0B1220] p-5 shadow-2xl">
-        <div className="flex items-start justify-between gap-3 border-b border-[#1E2E4E] pb-4">
+        <div className="border-b border-[#1E2E4E] pb-4">
           <div>
             <h2 id="sim-drawer-title" className="text-base font-semibold text-slate-100">
               Simulador de Escenarios
@@ -51,14 +50,6 @@ export function ScenarioDrawer() {
               Prueba cómo responde el motor de reglas clínicas sin alterar tu historial personal.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setSimulatorOpen(false)}
-            aria-label="Cerrar simulador"
-            className="rounded-lg border border-[#1E2E4E] p-1.5 text-slate-300 hover:text-white"
-          >
-            <AresIcon name="close" size={16} />
-          </button>
         </div>
 
         <div className="mt-4 flex-1 space-y-3 overflow-y-auto pr-1">

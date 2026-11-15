@@ -9,6 +9,13 @@ interface AstroStageCardProps {
   onHighlightSystem: (sys: SystemId) => void;
 }
 
+function levelStatusLabel(lvl: -1 | 0 | 1 | 2): string {
+  if (lvl === 0) return 'Óptimo';
+  if (lvl === 1) return 'Precaución';
+  if (lvl === 2) return 'Alerta roja';
+  return 'Sin datos';
+}
+
 export function AstroStageCard({ evaluation, vitals, onHighlightSystem }: AstroStageCardProps) {
   const mindLvl = statusToLevel(evaluation.systems.mind.status);
   const heartLvl = statusToLevel(evaluation.systems.heart.status);
@@ -23,11 +30,6 @@ export function AstroStageCard({ evaluation, vitals, onHighlightSystem }: AstroS
         : overallLvl === 2
           ? 'ALERTA ROJA'
           : 'SIN DATOS';
-
-  const isTilt = evaluation.context.activityState === 'orthostatic_tilt' || evaluation.context.posture === 'standing_tilt';
-  const showHeartHint = isTilt || heartLvl > 0;
-  const temp = typeof vitals.temperature === 'number' ? vitals.temperature : 36.6;
-  const showTempHint = typeof vitals.temperature === 'number' && temp >= 37.5;
 
   return (
     <div className="astro-stage">
@@ -45,41 +47,17 @@ export function AstroStageCard({ evaluation, vitals, onHighlightSystem }: AstroS
           />
           <span id="trafficLabel">{trafficLabel}</span>
         </div>
-        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--ink-muted)' }}>
-          Toca un nodo del cuerpo
-        </span>
       </div>
 
       <div className="astro-svg-wrap">
-        <div
-          className="floating-hint"
-          id="floatHintLeft"
-          aria-hidden={!showHeartHint}
-          style={{
-            top: 34,
-            left: 14,
-            opacity: showHeartHint ? 1 : 0,
-          }}
-        >
-          {isTilt ? 'Inclinación' : 'Presión / Pulso'}
-        </div>
-        <div
-          className="floating-hint"
-          id="floatHintRight"
-          aria-hidden={!showTempHint}
-          style={{ top: 42, right: 14, opacity: showTempHint ? 1 : 0 }}
-        >
-          Temp {temp} °C
-        </div>
-
         <svg
           className="astro-float"
           width="275"
           height="280"
           viewBox="0 -2 300 302"
           fill="none"
-          role="img"
-          aria-label="Mapa corporal del astronauta"
+          role="group"
+          aria-label="Mapa corporal interactivo del astronauta"
         >
           <rect x="88" y="128" width="124" height="86" rx="22" fill="#FF5A26" stroke="#1C1917" strokeWidth="4" />
           <rect x="110" y="212" width="32" height="58" rx="14" fill="#FFFDF8" stroke="#1C1917" strokeWidth="4" />
@@ -94,7 +72,8 @@ export function AstroStageCard({ evaluation, vitals, onHighlightSystem }: AstroS
           <rect x="100" y="196" width="100" height="16" rx="8" fill="#EFE9DC" stroke="#1C1917" strokeWidth="3" />
           <circle cx="150" cy="78" r="56" fill="#FFFDF8" stroke="#1C1917" strokeWidth="4" />
           <line x1="150" y1="22" x2="150" y2="12" stroke="#1C1917" strokeWidth="4" strokeLinecap="round" />
-          <g className="hotspot" role="button" tabIndex={0} aria-label="Mente y descanso" onClick={() => onHighlightSystem('mind')} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onHighlightSystem('mind'); } }}>
+          <g className="hotspot" role="button" tabIndex={0} aria-label={`Mente: ${levelStatusLabel(mindLvl)} — abrir controles`} onClick={() => onHighlightSystem('mind')} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onHighlightSystem('mind'); } }}>
+            <circle cx="150" cy="12" r="24" fill="transparent" />
             <circle id="node-mind" cx="150" cy="12" r="9" fill={colorForLevel(mindLvl)} stroke="#1C1917" strokeWidth="3" />
           </g>
           <rect x="108" y="46" width="84" height="62" rx="28" fill="#2A2845" stroke="#1C1917" strokeWidth="3.5" />
@@ -107,15 +86,35 @@ export function AstroStageCard({ evaluation, vitals, onHighlightSystem }: AstroS
             </g>
           ) : overallLvl === 0 ? (
             <g id="face-happy">
-              <circle cx="133" cy="74" r="4.5" fill="#FFFDF8" />
-              <circle cx="167" cy="74" r="4.5" fill="#FFFDF8" />
-              <path d="M138 87 Q150 97 162 87" stroke="#18C97E" strokeWidth="4" strokeLinecap="round" fill="none" />
+              {vitals.mood === 'excelente' ? (
+                <>
+                  <path d="M127 75 Q133 68 139 75" stroke="#FFFDF8" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+                  <path d="M161 75 Q167 68 173 75" stroke="#FFFDF8" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+                  <path d="M135 85 Q150 99 165 85" stroke="#18C97E" strokeWidth="4.5" strokeLinecap="round" fill="none" />
+                </>
+              ) : (
+                <>
+                  <circle cx="133" cy="74" r="4.5" fill="#FFFDF8" />
+                  <circle cx="167" cy="74" r="4.5" fill="#FFFDF8" />
+                  <path d="M138 87 Q150 97 162 87" stroke="#18C97E" strokeWidth="4" strokeLinecap="round" fill="none" />
+                </>
+              )}
             </g>
           ) : overallLvl === 1 ? (
             <g id="face-tired">
-              <line x1="127" y1="74" x2="139" y2="74" stroke="#FFFDF8" strokeWidth="3.5" strokeLinecap="round" />
-              <line x1="161" y1="74" x2="173" y2="74" stroke="#FFFDF8" strokeWidth="3.5" strokeLinecap="round" />
-              <path d="M140 90 Q150 86 160 90" stroke="#FFB800" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+              {vitals.mood === 'cansado' ? (
+                <>
+                  <circle cx="133" cy="74" r="4" fill="#FFFDF8" />
+                  <circle cx="167" cy="74" r="4" fill="#FFFDF8" />
+                  <path d="M140 88 Q150 91 160 88" stroke="#FFB800" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+                </>
+              ) : (
+                <>
+                  <line x1="127" y1="74" x2="139" y2="74" stroke="#FFFDF8" strokeWidth="3.5" strokeLinecap="round" />
+                  <line x1="161" y1="74" x2="173" y2="74" stroke="#FFFDF8" strokeWidth="3.5" strokeLinecap="round" />
+                  <path d="M140 90 Q150 85 160 90" stroke="#FFB800" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+                </>
+              )}
             </g>
           ) : (
             <g id="face-alert">
@@ -124,11 +123,13 @@ export function AstroStageCard({ evaluation, vitals, onHighlightSystem }: AstroS
               <ellipse cx="150" cy="91" rx="7" ry="5" fill="#FF3B4E" />
             </g>
           )}
-          <g className="hotspot heart-beat" role="button" tabIndex={0} aria-label="Corazón y circulación" onClick={() => onHighlightSystem('heart')} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onHighlightSystem('heart'); } }}>
+          <g className="hotspot" role="button" tabIndex={0} aria-label={`Corazón: ${levelStatusLabel(heartLvl)} — abrir controles`} onClick={() => onHighlightSystem('heart')} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onHighlightSystem('heart'); } }}>
+            <circle cx="150" cy="166" r="24" fill="transparent" />
             <circle cx="150" cy="166" r="19" fill="#FFFDF8" stroke="#1C1917" strokeWidth="3" />
             <path id="node-heart" d="M150 176 C150 176 138 168 138 161 A5.5 5.5 0 0 1 150 159 A5.5 5.5 0 0 1 162 161 C162 168 150 176 150 176Z" fill={colorForLevel(heartLvl)} stroke="#1C1917" strokeWidth="2.2" />
           </g>
-          <g className="hotspot" role="button" tabIndex={0} aria-label="Energía y defensas" onClick={() => onHighlightSystem('body')} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onHighlightSystem('body'); } }}>
+          <g className="hotspot" role="button" tabIndex={0} aria-label={`Cuerpo: ${levelStatusLabel(bodyLvl)} — abrir controles`} onClick={() => onHighlightSystem('body')} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onHighlightSystem('body'); } }}>
+            <rect x="126" y="180" width="48" height="48" fill="transparent" />
             <rect id="node-body" x="136" y="194" width="28" height="20" rx="6" fill={colorForLevel(bodyLvl)} stroke="#1C1917" strokeWidth="2.8" />
             <polygon points="151,197 146,204 150,204 149,211 154,203 150,203" fill="#1C1917" />
           </g>
