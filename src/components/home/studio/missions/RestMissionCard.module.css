@@ -1,0 +1,353 @@
+:global(.mission-btn).restCard {
+  position: relative;
+  aspect-ratio: auto;
+  min-height: 280px;
+  padding: 14px;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 22px;
+  text-align: left;
+  overflow: hidden;
+  transition-property: background-color, border-color, color;
+  transition-duration: 220ms;
+  transition-timing-function: ease-out;
+}
+
+:global(.mission-btn).restCard :global(.mission-top) {
+  position: static;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+:global(.mission-btn).restCard.nightActive {
+  background: #201E3D;
+  color: #FFFDF8;
+}
+
+:global(.mission-btn).restCard:global(.locked) {
+  opacity: 1;
+  background: var(--red-bg);
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.headerMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.missionLabel {
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--ink);
+  min-width: 0;
+  overflow-wrap: break-word;
+  transition: color 220ms ease-out;
+}
+
+.nightActive .missionLabel {
+  color: #FFFDF8;
+}
+
+.recommendedTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--lavender-soft);
+  color: var(--periwinkle-dark);
+  border: 1.5px solid var(--periwinkle-dark);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+:global(.mission-btn).restCard.nightActive :global(.mission-xp) {
+  background: #18C97E;
+  color: var(--ink);
+}
+
+.visualStage {
+  width: clamp(96px, 10vw, 120px);
+  height: clamp(96px, 10vw, 120px);
+  padding: 6px;
+  margin-inline: auto;
+  flex: none;
+  border-radius: 16px;
+  border: 1.5px solid rgba(28, 25, 23, 0.14);
+  background: var(--surface-alt);
+  display: grid;
+  place-items: center;
+  position: relative;
+  transition: background-color 220ms ease-out, border-color 220ms ease-out, opacity 150ms ease-out;
+}
+
+.nightActive .visualStage {
+  background: rgba(255, 253, 248, 0.08);
+  border-color: rgba(255, 253, 248, 0.22);
+}
+
+.visualStageLocked {
+  background: rgba(255, 255, 255, 0.65);
+  border-color: rgba(153, 27, 27, 0.3);
+  border-style: dashed;
+}
+
+.portholeSvg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.portholeSky {
+  transition: fill 280ms ease-out;
+}
+
+.nightStars {
+  opacity: 0;
+  transition: opacity 260ms ease-out;
+}
+
+.nightActive .nightStars {
+  opacity: 1;
+}
+
+.twinkle {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.sunOrb {
+  opacity: 1;
+  transition: opacity 220ms ease-out;
+}
+
+.nightActive .sunOrb {
+  opacity: 0;
+}
+
+.moonOrb {
+  opacity: 0;
+  transition: opacity 240ms ease-out;
+}
+
+.nightActive .moonOrb {
+  opacity: 1;
+}
+
+.zzzFloat {
+  opacity: 0;
+  font-family: var(--font-display), sans-serif;
+  transition: opacity 240ms ease-out;
+}
+
+.nightActive .zzzFloat {
+  opacity: 1;
+}
+
+.restBody {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+}
+
+.missionSub {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #57534E;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  transition: color 220ms ease-out;
+}
+
+.nightActive .missionSub {
+  color: #D5D1F5;
+}
+
+.lockedNote {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #991B1B;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+}
+
+.sleepSwitch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 32px;
+  background: var(--surface-alt);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 4px 10px 4px 6px;
+  box-shadow: 0 2px 0 var(--ink);
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink);
+  transition: background-color 200ms ease-out, color 200ms ease-out;
+}
+
+.sleepSwitchOn {
+  background: #18C97E;
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.sleepSwitchLocked {
+  background: rgba(255, 255, 255, 0.78);
+  border-style: dashed;
+  color: #991B1B;
+  box-shadow: none;
+}
+
+.switchKnob {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.8px solid var(--ink);
+  background: var(--yellow);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  transition: background-color 200ms ease-out, color 200ms ease-out;
+}
+
+.sleepSwitchOn .switchKnob {
+  background: #201E3D;
+  color: #FFE066;
+}
+
+.switchLabel {
+  line-height: 1.15;
+  overflow-wrap: break-word;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .nightActive .twinkle {
+    animation: twinkleStar 1.8s ease-in-out infinite alternate;
+  }
+
+  .nightActive .starDelay1 {
+    animation-delay: 0.5s;
+  }
+
+  .nightActive .starDelay2 {
+    animation-delay: 0.9s;
+  }
+
+  .nightActive .starDelay3 {
+    animation-delay: 1.2s;
+  }
+
+  .sunOrb {
+    transform: translateY(0);
+    transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease-out;
+  }
+
+  .nightActive .sunOrb {
+    transform: translateY(20px);
+  }
+
+  .moonOrb {
+    transform: translateY(16px);
+    transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms ease-out;
+  }
+
+  .nightActive .moonOrb {
+    transform: translateY(0);
+  }
+
+  .nightActive .zzzFloat {
+    animation: floatZ 2.4s ease-in-out infinite;
+  }
+
+  .nightActive .zzzDelay {
+    animation-delay: 0.8s;
+  }
+
+  .switchKnob {
+    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), background-color 200ms ease-out, color 200ms ease-out;
+  }
+
+  .sleepSwitchOn .switchKnob {
+    transform: rotate(-12deg);
+  }
+
+  @keyframes twinkleStar {
+    0% {
+      opacity: 0.4;
+      transform: scale(0.88);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1.12);
+    }
+  }
+
+  @keyframes floatZ {
+    0% {
+      transform: translate(0, 4px) scale(0.88);
+      opacity: 0.35;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      transform: translate(5px, -10px) scale(1.08);
+      opacity: 0;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  :global(.mission-btn).restCard {
+    min-height: 248px;
+    padding: 12px 10px;
+    border-radius: 18px;
+    gap: 8px;
+  }
+
+  .missionLabel {
+    font-size: 0.88rem;
+  }
+
+  .visualStage {
+    width: 88px;
+    height: 88px;
+  }
+
+  .sleepSwitch {
+    gap: 5px;
+    padding: 4px 8px 4px 5px;
+    font-size: 0.74rem;
+  }
+
+  .switchKnob {
+    width: 18px;
+    height: 18px;
+  }
+
+  .missionSub,
+  .lockedNote {
+    font-size: 0.75rem;
+    line-height: 1.2;
+  }
+}
