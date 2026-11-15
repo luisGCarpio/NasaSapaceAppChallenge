@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server';
 import { POST as loginPost } from '../src/app/api/auth/login/route';
 import { POST as registerPost } from '../src/app/api/auth/register/route';
 import { POST as checkinPost } from '../src/app/api/checkin/route';
+import { POST as commsLogPost } from '../src/app/api/comms/log/route';
 import { POST as evaluatePost } from '../src/app/api/evaluate/route';
 import { POST as missionCompletePost } from '../src/app/api/mission/complete/route';
 import { POST as missionResetPost } from '../src/app/api/mission/reset/route';
@@ -223,4 +224,122 @@ test('API /api/nasa-datasets entrega auditoría real y timeline de sujeto oficia
   assert.ok(subjJson.points.length > 50);
   assert.equal(subjJson.v2EvaluablePoints, 0);
   assert.equal(subjJson.v3EvaluablePoints, subjJson.subject.vitalsCount);
+});
+
+test('Cookie malformada devuelve 401 (nunca 500) y /api/auth/login maneja quickLogin="false" y password >256 chars', async () => {
+  const badCookieState = await stateGet(
+    new Request('http://localhost/api/state', {
+      headers: { Cookie: 'ares_session=%E0%A4%A' },
+    })
+  );
+  assert.equal(badCookieState.status, 401);
+
+  const badCookieCheckin = await checkinPost(
+    new Request('http://localhost/api/checkin', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: 'ares_session=%E0%A4%A',
+      },
+      body: JSON.stringify({ vitals: SCENARIOS.nominal }),
+    })
+  );
+  assert.equal(badCookieCheckin.status, 401);
+
+  const quickFalseLogin = await loginPost(
+    jsonReq('http://localhost/api/auth/login', {
+      identifier: 'elena',
+      password: '123',
+      quickLogin: 'false',
+    })
+  );
+  assert.equal(quickFalseLogin.status, 200);
+  const quickFalseBody = (await quickFalseLogin.json()) as { token: string };
+  assert.ok(quickFalseBody.token);
+
+  const longPasswordLogin = await loginPost(
+    jsonReq('http://localhost/api/auth/login', {
+      identifier: 'elena',
+      password: 'a'.repeat(257),
+    })
+  );
+  assert.equal(longPasswordLogin.status, 400);
+});
+
+test('POST /api/comms/log y POST /api/checkin aplican validación estricta de catálogo, fechas y límites (HTTP 400)', async () => {
+  const loginRes = await loginPost(
+    jsonReq('http://localhost/api/auth/login', { identifier: 'elena', password: '123' })
+  );
+  assert.equal(loginRes.status, 200);
+  const { token } = (await loginRes.json()) as { token: string };
+
+  // /api/comms/log rechaza overallStatus inválido (400)
+  const badStatusComms = await commsLogPost(
+    jsonReq(
+      'http://localhost/api/comms/log',
+      { overallStatus: 'CRITICAL_UNKNOWN', readinessScore: 80, message: 'Reporte a Tierra' },
+      token
+    )
+  );
+  assert.equal(badStatusComms.status, 400);
+
+  // /api/comms/log rechaza readinessScore > 100 (400)
+  const badScoreComms = await commsLogPost(
+    jsonReq(
+      'http://localhost/api/comms/log',
+      { overallStatus: 'GREEN', readinessScore: 101, message: 'Reporte a Tierra' },
+      token
+    )
+  );
+  assert.equal(badScoreComms.status, 400);
+
+  // /api/comms/log rechaza message > 4000 chars (400)
+  const longMessageComms = await commsLogPost(
+    jsonReq(
+      'http://localhost/api/comms/log',
+      { overallStatus: 'GREEN', readinessScore: 85, message: 'x'.repeat(4001) },
+      token
+    )
+  );
+  assert.equal(longMessageComms.status, 400);
+
+  // /api/comms/log válido devuelve 200
+  const validComms = await commsLogPost(
+    jsonReq(
+      'http://localhost/api/comms/log',
+      { overallStatus: 'GREEN', readinessScore: 95, message: 'Telemetría nominal' },
+      token
+    )
+  );
+  assert.equal(validComms.status, 200);
+
+  // /api/checkin rechaza dateKey: "2026-99-99" (400)
+  const invalidMonthDay = await checkinPost(
+    jsonReq(
+      'http://localhost/api/checkin',
+      { vitals: SCENARIOS.nominal, dateKey: '2026-99-99' },
+      token
+    )
+  );
+  assert.equal(invalidMonthDay.status, 400);
+
+  // /api/checkin rechaza dateKey: "2026-02-29" en año no bisiesto (400)
+  const invalidLeapDay = await checkinPost(
+    jsonReq(
+      'http://localhost/api/checkin',
+      { vitals: SCENARIOS.nominal, dateKey: '2026-02-29' },
+      token
+    )
+  );
+  assert.equal(invalidLeapDay.status, 400);
+
+  // /api/checkin rechaza source: "invalid_source" (400)
+  const invalidSource = await checkinPost(
+    jsonReq(
+      'http://localhost/api/checkin',
+      { vitals: SCENARIOS.nominal, dateKey: '2026-11-15', source: 'invalid_source' },
+      token
+    )
+  );
+  assert.equal(invalidSource.status, 400);
 });

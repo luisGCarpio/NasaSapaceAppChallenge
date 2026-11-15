@@ -6,11 +6,19 @@ import test from 'node:test';
 import {
   ACTIONS,
   ALGORITHM_VERSION,
+  DEFAULT_CONTEXT,
+  REFERENCES,
   SCENARIOS,
   STATUS,
+  analyzePersonalBaselines,
+  computeCoverage,
   evaluateHealth,
+  normalizeContext,
 } from '../src/domain/health';
 import type { PriorObservationInput } from '../src/domain/health/context-specs';
+import { evaluateCrosses } from '../src/domain/health/cross-evaluator';
+import { assessQuality } from '../src/domain/health/quality-restrictions';
+import { evaluateBody, evaluateHeart, evaluateMind } from '../src/domain/health/systems-evaluator';
 import { BASE_MISSIONS } from '../src/domain/missions/mission-catalog';
 import { applyClinicalRestrictionsToMissions } from '../src/domain/missions/mission-safety';
 import { loadDb, saveDb } from '../src/server/storage/file-store';
@@ -176,4 +184,153 @@ test('Escritura atómica con recuperación desde .bak y cola honesta Supabase HT
     delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
+});
+
+test('Prioridad RED + YELLOW sin degradación de acción en evaluateHeart, evaluateMind y evaluateBody', () => {
+  // evaluateHeart: crisis hipertensiva (185/122) + hr = 105 en reposo mantiene ACTIONS.COMMS
+  const heartOut = evaluateHeart(
+    { bp_systolic: 185, bp_diastolic: 122, heart_rate: 105 },
+    DEFAULT_CONTEXT,
+    {}
+  );
+  assert.equal(heartOut.evaluation.status, STATUS.RED);
+  assert.equal(heartOut.evaluation.actionIcon, ACTIONS.COMMS.actionIcon);
+  assert.equal(heartOut.evaluation.actionText, ACTIONS.COMMS.actionText);
+
+  // evaluateMind: sleep_hours = 4.5 + mood = 'cansado' mantiene ACTIONS.SLEEP
+  const mindOut = evaluateMind(
+    { sleep_hours: 4.5, mood: 'cansado' },
+    DEFAULT_CONTEXT,
+    {}
+  );
+  assert.equal(mindOut.evaluation.status, STATUS.RED);
+  assert.equal(mindOut.evaluation.actionIcon, ACTIONS.SLEEP.actionIcon);
+  assert.equal(mindOut.evaluation.actionText, ACTIONS.SLEEP.actionText);
+
+  // evaluateBody: temperature = 38.4 + glucose = 115 en ayunas mantiene ACTIONS.ISOLATE y REFERENCES.FEVER
+  const fastingCtx = normalizeContext({ glucoseTiming: 'fasting' });
+  const bodyOut = evaluateBody(
+    { temperature: 38.4, glucose: 115 },
+    fastingCtx,
+    {}
+  );
+  assert.equal(bodyOut.evaluation.status, STATUS.RED);
+  assert.equal(bodyOut.evaluation.actionIcon, ACTIONS.ISOLATE.actionIcon);
+  assert.equal(bodyOut.evaluation.actionText, ACTIONS.ISOLATE.actionText);
+  assert.deepEqual(bodyOut.evaluation.reference, REFERENCES.FEVER);
+});
+
+test('cross-evaluator: hr=100, sbp=95 en post_exercise no dispara orthostatic_fluid_strain y normalizeContext hace fallback a DEFAULT_CONTEXT', () => {
+  const postExCtx = normalizeContext({ activityState: 'post_exercise', posture: 'seated' });
+  const postExEval = evaluateHealth({ heart_rate: 100, bp_systolic: 95, bp_diastolic: 65 }, { context: postExCtx });
+  assert.equal(
+    postExEval.triggeredCrosses.some((c) => c.id === 'orthostatic_fluid_strain'),
+    false
+  );
+
+  // Confirmar también llamando evaluateCrosses directamente
+  const directCross = evaluateCrosses(
+    { heart_rate: 100, bp_systolic: 95, bp_diastolic: 65 },
+    postExCtx,
+    postExEval.systems
+  );
+  assert.equal(
+    directCross.triggeredCrosses.some((c) => c.id === 'orthostatic_fluid_strain'),
+    false
+  );
+
+  // normalizeContext rechaza valores fuera de catálogo haciendo fallback a DEFAULT_CONTEXT
+  const normalized = normalizeContext({
+    activityState: 'zero_g_sprint' as never,
+    posture: 'upside_down' as never,
+    glucoseTiming: 'midnight_snack' as never,
+    tempMethod: 'infrared_laser' as never,
+  });
+  assert.equal(normalized.activityState, DEFAULT_CONTEXT.activityState);
+  assert.equal(normalized.posture, DEFAULT_CONTEXT.posture);
+  assert.equal(normalized.glucoseTiming, DEFAULT_CONTEXT.glucoseTiming);
+  assert.equal(normalized.tempMethod, DEFAULT_CONTEXT.tempMethod);
+});
+
+test('baseline-analyzer: ordena priorObservations cronológicamente antes de detectar tendencia y en fasting excluye random/unknown', () => {
+  // Desordenadas: cronológicamente [60, 65, 72] -> con actual 78 da 'rising' (sin ordenar [72, 65, 60, 78] sería 'stable')
+  const unorderedPriors: PriorObservationInput[] = [
+    {
+      observationId: 'obs-3',
+      capturedAt: '2026-11-12T10:00:00.000Z',
+      overallStatus: 'GREEN',
+      vitals: { heart_rate: 72 },
+      context: { activityState: 'rest' },
+    },
+    {
+      observationId: 'obs-1',
+      capturedAt: '2026-11-10T10:00:00.000Z',
+      overallStatus: 'GREEN',
+      vitals: { heart_rate: 60 },
+      context: { activityState: 'rest' },
+    },
+    {
+      observationId: 'obs-2',
+      capturedAt: '2026-11-11T10:00:00.000Z',
+      overallStatus: 'GREEN',
+      vitals: { heart_rate: 65 },
+      context: { activityState: 'rest' },
+    },
+  ];
+
+  const hrBaselines = analyzePersonalBaselines({ heart_rate: 78 }, DEFAULT_CONTEXT, unorderedPriors);
+  assert.equal(hrBaselines.heart_rate?.n, 3);
+  assert.equal(hrBaselines.heart_rate?.trendDirection, 'rising');
+
+  // También por sortOrder explícito desordenado
+  const unorderedBySortOrder: PriorObservationInput[] = [
+    { observationId: 's3', sortOrder: 30, overallStatus: 'GREEN', vitals: { heart_rate: 72 }, context: { activityState: 'rest' } },
+    { observationId: 's1', sortOrder: 10, overallStatus: 'GREEN', vitals: { heart_rate: 60 }, context: { activityState: 'rest' } },
+    { observationId: 's2', sortOrder: 20, overallStatus: 'GREEN', vitals: { heart_rate: 65 }, context: { activityState: 'rest' } },
+  ];
+  const sortOrderBaselines = analyzePersonalBaselines({ heart_rate: 78 }, DEFAULT_CONTEXT, unorderedBySortOrder);
+  assert.equal(sortOrderBaselines.heart_rate?.trendDirection, 'rising');
+
+  // En fasting excluye random y unknown
+  const mixedGlucosePriors: PriorObservationInput[] = [
+    { observationId: 'g1', overallStatus: 'GREEN', vitals: { glucose: 82 }, context: { glucoseTiming: 'fasting' } },
+    { observationId: 'g2', overallStatus: 'GREEN', vitals: { glucose: 86 }, context: { glucoseTiming: 'fasting' } },
+    { observationId: 'g3', overallStatus: 'GREEN', vitals: { glucose: 150 }, context: { glucoseTiming: 'random' } },
+    { observationId: 'g4', overallStatus: 'GREEN', vitals: { glucose: 165 }, context: { glucoseTiming: 'unknown' } },
+    { observationId: 'g5', overallStatus: 'GREEN', vitals: { glucose: 170 } },
+  ];
+  const fastingContext = normalizeContext({ glucoseTiming: 'fasting' });
+  const glucBaselines = analyzePersonalBaselines({ glucose: 88 }, fastingContext, mixedGlucosePriors);
+  assert.equal(glucBaselines.glucose?.n, 2);
+  assert.equal(glucBaselines.glucose?.median, 84);
+});
+
+test('quality-restrictions: glucose=45 con glucoseTiming=unknown y confirmedRepeated=true con alta cobertura no retorna verified y exige recheck', () => {
+  const vitals = {
+    sleep_hours: 7.5,
+    mood: 'bien' as const,
+    heart_rate: 72,
+    bp_systolic: 116,
+    bp_diastolic: 74,
+    temperature: 36.6,
+    glucose: 45,
+  };
+  const ctx = normalizeContext({ glucoseTiming: 'unknown', confirmedRepeated: true });
+  const coverage = computeCoverage(vitals);
+  assert.equal(coverage.presentCount, 7);
+
+  const directQuality = assessQuality({
+    vitals,
+    context: ctx,
+    coverage,
+    overallStatus: STATUS.RED,
+  });
+  assert.notEqual(directQuality.tier, 'verified');
+  assert.equal(directQuality.tier, 'contextual_pending');
+  assert.equal(directQuality.needsRecheck, true);
+  assert.equal(directQuality.contextComplete, false);
+
+  const fullEval = evaluateHealth(vitals, { context: ctx });
+  assert.notEqual(fullEval.quality.tier, 'verified');
+  assert.equal(fullEval.quality.needsRecheck, true);
 });

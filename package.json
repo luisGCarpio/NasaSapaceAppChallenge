@@ -7,7 +7,7 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "test": "tsx --test tests/ares-domain.test.ts tests/ares-nextjs.test.ts tests/nasa-benchmark.test.ts"
+    "test": "tsx --test tests/ares-domain.test.ts tests/ares-nextjs.test.ts tests/nasa-benchmark.test.ts tests/studio-controls.test.ts"
   },
   "dependencies": {
     "next": "^16.4.6",
