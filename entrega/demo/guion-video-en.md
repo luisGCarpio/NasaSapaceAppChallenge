@@ -8,7 +8,7 @@
 
 | Timestamp | On-Screen Visual (Screen Recording) | Voiceover / English Subtitles |
 | :--- | :--- | :--- |
-| **0:00 – 0:02** | Title card: **ApexCode — Luis Carpio** + A.R.E.S. Pulse interface | *"Hi, I'm Luis from Team ApexCode."* |
+| **0:00 – 0:02** | Title card: **ApexCode — Brandon Alvis, Luis Carpio, Mateo Vargas** + A.R.E.S. Pulse interface | *"Hi, we're Team ApexCode."* |
 | **0:02 – 0:05** | Astronaut HUD showing Mars comms delay & 4 physiological systems | *"On Mars missions, a 44-minute delay means crews can't wait for Earth doctors."* |
 | **0:05 – 0:10** | Adjusting partial vitals -> Body Map & 4-Level NASA Triage Card update live | *"Meet **A.R.E.S. Pulse**: autonomous astronaut health triage that works even with partial telemetry."* |
 | **0:10 – 0:21** | NASA Cohort Percentile bars (`3,965` obs) + **Gravity Re-Entry Simulator** modal + **Interactive Box Breathing / Safety-Locked Exercise** | *"Powered by 3,965 real NASA OSDR and Life Sciences records, it benchmarks vitals against spaceflight cohorts, simulates orthostatic gravity re-entry stress, and safely gates daily missions."* |

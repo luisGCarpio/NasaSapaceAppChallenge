@@ -7,7 +7,7 @@
 ## Slide 1 — Title & Mission Identity
 - **Title:** **A.R.E.S. Pulse**
 - **Tagline:** *Autonomous Astronaut Health Triage, Empirical NASA Cohort Benchmarking & Gravity Re-Entry Simulator*
-- **Team:** ApexCode — Luis Carpio (Universidad CUC)
+- **Team:** ApexCode — Brandon Alvis, Luis Carpio, Mateo Vargas (Universidad CUC)
 - **Challenge:** Health Monitoring Software — NASA Space Apps Challenge 2026
 - **Visual:** Hero view of the A.R.E.S. Pulse interactive Astronaut HUD & Body Map.
 
