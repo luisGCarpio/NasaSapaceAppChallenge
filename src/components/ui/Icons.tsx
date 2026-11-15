@@ -3,6 +3,7 @@ import type { SVGProps } from 'react';
 export type AresIconName =
   | 'brain'
   | 'heart'
+  | 'bolt'
   | 'shield'
   | 'droplet'
   | 'activity'
@@ -31,6 +32,7 @@ interface AresIconProps extends SVGProps<SVGSVGElement> {
 const ICON_PATHS: Record<AresIconName, string[]> = {
   brain: ['M9.5 2a4.5 4.5 0 0 0-4.4 5.4A3.5 3.5 0 0 0 6 14.3V18a3 3 0 0 0 3 3h1V2h-.5Z', 'M14.5 2a4.5 4.5 0 0 1 4.4 5.4A3.5 3.5 0 0 1 18 14.3V18a3 3 0 0 1-3 3h-1V2h.5Z'],
   heart: ['M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z'],
+  bolt: ['M13 2 3 14h9l-1 8 10-12h-9l1-8Z'],
   shield: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z'],
   droplet: ['M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z'],
   activity: ['M22 12h-4l-3 9L9 3l-3 9H2'],
@@ -61,7 +63,7 @@ export function AresIcon({ name, size = 18, className = '', ...props }: AresIcon
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.85}
+      strokeWidth={2.15}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -69,7 +71,7 @@ export function AresIcon({ name, size = 18, className = '', ...props }: AresIcon
       {...props}
     >
       {paths.map((d, index) => (
-        <path key={index} d={d} />
+        <path key={index} d={d} vectorEffect="non-scaling-stroke" />
       ))}
     </svg>
   );

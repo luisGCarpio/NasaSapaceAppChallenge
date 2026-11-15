@@ -39,7 +39,7 @@ export function CommsReportModal() {
       aria-labelledby="comms-modal-title"
     >
       <div className="w-full max-w-lg rounded-2xl border border-[#1E2E4E] bg-[#0B1220] p-5 shadow-2xl">
-        <div className="flex items-start justify-between gap-3 border-b border-[#1E2E4E] pb-3">
+        <div className="border-b border-[#1E2E4E] pb-3">
           <div>
             <h2 id="comms-modal-title" className="text-base font-semibold text-slate-100">
               Copiar Resumen Clínico a Bitácora
@@ -48,14 +48,6 @@ export function CommsReportModal() {
               Copia local al portapapeles y registro auditable (sin transmisión de radio ni telemetría externa).
             </p>
           </div>
-          <button
-            type="button"
-            onClick={closeComms}
-            aria-label="Cerrar reporte"
-            className="rounded-lg border border-[#1E2E4E] p-1.5 text-slate-300 hover:text-white"
-          >
-            <AresIcon name="close" size={16} />
-          </button>
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-2">

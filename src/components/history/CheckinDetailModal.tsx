@@ -2,7 +2,6 @@
 
 import { evaluateHealth } from '@/domain/health';
 import type { CheckinEntry } from '@/server/storage/types';
-import { AresIcon } from '../ui/Icons';
 import { StatusBadge } from '../ui/StatusBadge';
 
 export function CheckinDetailModal({
@@ -23,7 +22,7 @@ export function CheckinDetailModal({
       aria-labelledby="detail-modal-title"
     >
       <div className="w-full max-w-lg rounded-2xl border border-[#1E2E4E] bg-[#0B1220] p-5 shadow-2xl">
-        <div className="flex items-start justify-between gap-3 border-b border-[#1E2E4E] pb-3">
+        <div className="border-b border-[#1E2E4E] pb-3">
           <div>
             <h2 id="detail-modal-title" className="text-base font-semibold text-slate-100">
               Chequeo del {entry.dateKey}
@@ -33,14 +32,6 @@ export function CheckinDetailModal({
               {entry.updatesCount === 1 ? 'actualización' : 'actualizaciones'}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Cerrar detalle"
-            className="rounded-lg border border-[#1E2E4E] p-1.5 text-slate-300 hover:text-white"
-          >
-            <AresIcon name="close" size={16} />
-          </button>
         </div>
 
         <div className="mt-4 space-y-3">
@@ -68,6 +59,16 @@ export function CheckinDetailModal({
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="mt-4 flex justify-end border-t border-[#1E2E4E] pt-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-[#1E2E4E] px-4 py-2 text-xs font-medium text-slate-300 hover:text-white"
+          >
+            Cerrar
+          </button>
         </div>
       </div>
     </div>

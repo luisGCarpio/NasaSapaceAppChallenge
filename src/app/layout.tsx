@@ -1,7 +1,29 @@
 import type { Metadata } from 'next';
+import { Fredoka, Plus_Jakarta_Sans, Space_Mono } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { AresProvider } from '@/context/AresContext';
 import './globals.css';
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-sans',
+});
+
+const fredoka = Fredoka({
+  subsets: ['latin'],
+  weight: ['500', '600', '700'],
+  display: 'swap',
+  variable: '--font-display',
+});
+
+const spaceMono = Space_Mono({
+  subsets: ['latin'],
+  weight: ['700'],
+  display: 'swap',
+  variable: '--font-mono',
+});
 
 export const metadata: Metadata = {
   title: 'A.R.E.S. Pulse — Monitor Lúdico de Salud Espacial',
@@ -11,16 +33,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Mono:wght@700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html
+      lang="es"
+      className={`${plusJakartaSans.className} ${plusJakartaSans.variable} ${fredoka.variable} ${spaceMono.variable}`}
+    >
       <body>
+        <a href="#main-content" className="skip-link">
+          Saltar al contenido
+        </a>
         <AresProvider>{children}</AresProvider>
       </body>
     </html>
