@@ -1,9 +1,17 @@
 import assert from 'node:assert/strict';
 import Module from 'node:module';
 import test from 'node:test';
-import { isValidElement, type ReactNode } from 'react';
+import { createElement, isValidElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ContextAndSaveCard } from '../src/components/home/studio/ContextAndSaveCard';
+import {
+  GRAVITY_DESCENT_DURATION_MS,
+  type GravityModalPhase,
+  createGravityDescentController,
+  getInitialGravityOpenPhase,
+  interpolateMetric,
+  prefersReducedMotionSafe,
+} from '../src/components/home/studio/gravity-reentry-machine';
 import { applyContextChange, applyNumericToDraft } from '../src/components/home/studio/studio-actions';
 import {
   applySymptomChanges,
@@ -12,8 +20,12 @@ import {
   setDraftKeysMeasured,
   setDraftMeasured,
 } from '../src/components/home/studio/studio-types';
-import { STATUS, VITAL_SPECS, evaluateHealth } from '../src/domain/health';
+import { type PartialVitalValues, STATUS, VITAL_SPECS, evaluateHealth } from '../src/domain/health';
 import { DEFAULT_CONTEXT } from '../src/domain/health/context-specs';
+import {
+  type GravityStressMode,
+  evaluateNasaOperationalDecision,
+} from '../src/domain/nasa/cohort-decision';
 import { logLocalComms, readLocalState, saveLocalCheckin } from '../src/lib/local-state';
 
 test('síntomas existentes permanecen visibles y se pueden quitar sin cambiar su literal', () => {
@@ -93,6 +105,88 @@ test('cada card muestra un solo botón Medido/Sin medir en la cabecera y sin dot
     assert.equal((html.match(/class="measure-toggle/g) ?? []).length, 3);
     assert.equal((html.match(/>Medido</g) ?? []).length, 1);
     assert.equal((html.match(/>Sin medir</g) ?? []).length, 2);
+  } finally {
+    if (prevCss) extensions['.css'] = prevCss;
+    else delete extensions['.css'];
+  }
+});
+
+test('ControlsTabPanel y ContextAndSaveCard aplican disclosures, stepper táctil, a11y y banner de simulación', async () => {
+  const extensions = (Module as unknown as { _extensions: Record<string, (m: { exports: unknown }) => void> })._extensions;
+  const prevCss = extensions['.css'];
+  extensions['.css'] = (mod) => {
+    const proxy = new Proxy({}, { get: (_, prop) => String(prop) });
+    mod.exports = { __esModule: true, default: proxy };
+  };
+  try {
+    const { ControlsTabPanel } = await import('../src/components/home/studio/ControlsTabPanel');
+    const cleanDraft = createCleanDraft();
+    const baseProps = {
+      draft: cleanDraft,
+      context: { ...DEFAULT_CONTEXT, symptoms: ['Cefalea'] },
+      evaluation: evaluateHealth(draftToPartialVitals(cleanDraft)),
+      highlightedSys: null,
+      onInteract: () => {},
+      userState: null,
+      saving: false,
+      saveMessage: { ok: true, text: 'Guardado ok' },
+      isSimulationOrReplay: false,
+      onUpdateNumeric: () => {},
+      onUpdateMood: () => {},
+      onToggleSystemMeasured: () => {},
+      onChangeContext: () => {},
+      onRunScenario: () => {},
+      onClearAllMeasured: () => {},
+      onSaveCheckin: () => {},
+    };
+
+    const idleTree = ControlsTabPanel(baseProps);
+    assert.equal(
+      (idleTree as unknown as { props: { onPointerDownCapture?: unknown } }).props.onPointerDownCapture,
+      undefined
+    );
+    const idleHtml = renderToStaticMarkup(idleTree);
+
+    // Wave 1: Sin dato removido, #val-mood removido, simulaciones y contexto colapsados por defecto
+    assert.equal(idleHtml.includes('Sin dato'), false);
+    assert.equal(idleHtml.includes('id="val-mood"'), false);
+    assert.equal(idleHtml.includes('class="val-pill is-empty"'), true);
+    assert.equal(idleHtml.includes('<details class="sim-disclosure">'), true);
+    assert.equal(idleHtml.includes('<details class="context-disclosure">'), true);
+    assert.ok(idleHtml.indexOf('id="group-context"') < idleHtml.indexOf('class="sim-disclosure"'));
+    assert.equal(idleHtml.includes('/7 medidos'), false);
+    assert.equal(idleHtml.includes('1 activo'), false);
+    // saveMessage.ok === true no se duplica inline (lo maneja .toast)
+    assert.equal(idleHtml.includes('Guardado ok'), false);
+
+    // Wave 2: Semántica h2, labels asociados, fieldset dual-bp, sin botones +/- y aria-valuetext
+    assert.equal((idleHtml.match(/<h2 class="group-head-left">/g) ?? []).length, 4);
+    assert.equal(idleHtml.includes('<fieldset class="dual-bp"'), true);
+    assert.equal(idleHtml.includes('<legend class="sr-only">Presión arterial</legend>'), true);
+    assert.equal(idleHtml.includes('for="in-sleep"'), true);
+    assert.equal(idleHtml.includes('for="ctx-activity"'), true);
+    assert.equal(idleHtml.includes('class="stepper-btn"'), false);
+    assert.equal(idleHtml.includes('Disminuir Horas de sueño'), false);
+    assert.equal(idleHtml.includes('Aumentar Temperatura corporal'), false);
+    assert.equal(idleHtml.includes('aria-valuetext="8.0 h"'), true);
+    assert.equal(idleHtml.includes('touch-action:pan-y'), true);
+
+    // Simulación activa + error inline + highlightedSys
+    const simTree = ControlsTabPanel({
+      ...baseProps,
+      highlightedSys: 'heart',
+      isSimulationOrReplay: true,
+      saveMessage: { ok: false, text: 'Error al guardar toma' },
+    });
+    assert.equal(
+      typeof (simTree as unknown as { props: { onPointerDownCapture?: unknown } }).props.onPointerDownCapture,
+      'function'
+    );
+    const simHtml = renderToStaticMarkup(simTree);
+    assert.equal(simHtml.includes('Modo simulación activo — datos de prueba, no tu registro real'), true);
+    assert.equal(simHtml.includes('Volver a mis datos'), true);
+    assert.equal(simHtml.includes('role="alert"'), true);
+    assert.equal(simHtml.includes('Error al guardar toma'), true);
   } finally {
     if (prevCss) extensions['.css'] = prevCss;
     else delete extensions['.css'];
@@ -313,5 +407,501 @@ test('local-state: recupera de JSON corrupto, deduplica saveLocalCheckin y orden
     assert.equal(logged.commsLog[0].message, 'Reporte más reciente');
     assert.equal(logged.commsLog[1].id, 'old-39');
     assert.equal(logged.commsLog.some((item) => item.id === 'old-0'), false);
+  });
+});
+
+test('NasaDecisionCard muestra Referencia NASA y explicaciones mediante botones de modal y cohorte colapsable', async () => {
+  const extensions = (Module as unknown as { _extensions: Record<string, (m: { exports: unknown }) => void> })._extensions;
+  const prevCss = extensions['.css'];
+  extensions['.css'] = (mod) => {
+    const proxy = new Proxy({}, { get: (_, prop) => String(prop) });
+    mod.exports = { __esModule: true, default: proxy };
+  };
+  try {
+    const { NasaDecisionCard } = await import('../src/components/home/studio/NasaDecisionCard');
+    const vitals = { heart_rate: 72, bp_systolic: 118, bp_diastolic: 76 };
+    const html = renderToStaticMarkup(
+      createElement(NasaDecisionCard, {
+        vitals,
+        evaluation: evaluateHealth(vitals),
+        context: DEFAULT_CONTEXT,
+      })
+    );
+    assert.equal((html.match(/<details class="nasa-details nasa-comparison">/g) ?? []).length, 1);
+    assert.equal((html.match(/Referencia NASA/g) ?? []).length, 3);
+    assert.equal((html.match(/Ver explicación/g) ?? []).length, 2);
+  } finally {
+    if (prevCss) extensions['.css'] = prevCss;
+    else delete extensions['.css'];
+  }
+});
+
+async function withCssStub<T>(fn: () => Promise<T>): Promise<T> {
+  const extensions = (Module as unknown as { _extensions: Record<string, (m: { exports: unknown }) => void> })._extensions;
+  const prevCss = extensions['.css'];
+  extensions['.css'] = (mod) => {
+    const proxy = new Proxy({}, { get: (_, prop) => String(prop) });
+    mod.exports = { __esModule: true, default: proxy };
+  };
+  try {
+    return await fn();
+  } finally {
+    if (prevCss) extensions['.css'] = prevCss;
+    else delete extensions['.css'];
+  }
+}
+
+function withReducedMotionWindow<T>(matches: boolean, fn: () => T): T {
+  const globalAny = globalThis as Record<string, unknown>;
+  const hadWindow = Object.prototype.hasOwnProperty.call(globalThis, 'window');
+  const prevWindow = globalAny.window;
+
+  globalAny.window = {
+    matchMedia: () => ({ matches }),
+  };
+
+  try {
+    return fn();
+  } finally {
+    if (hadWindow) {
+      globalAny.window = prevWindow;
+    } else {
+      delete globalAny.window;
+    }
+  }
+}
+
+test('gravity-reentry-machine: open con GO_FOR_LANDING y reducedMotion=false pasa de descending a tablet tras 1800ms', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const phases: GravityModalPhase[] = [];
+  const controller = createGravityDescentController({
+    onPhaseChange: (phase) => phases.push(phase),
+  });
+
+  assert.equal(GRAVITY_DESCENT_DURATION_MS, 1800);
+  assert.equal(controller.getPhase(), 'closed');
+  assert.equal(controller.open('GO_FOR_LANDING', false), 'descending');
+  assert.equal(controller.getPhase(), 'descending');
+  assert.deepEqual(phases, ['descending']);
+
+  t.mock.timers.tick(GRAVITY_DESCENT_DURATION_MS - 1);
+  assert.equal(controller.getPhase(), 'descending');
+  assert.deepEqual(phases, ['descending']);
+
+  t.mock.timers.tick(1);
+  assert.equal(controller.getPhase(), 'tablet');
+  assert.deepEqual(phases, ['descending', 'tablet']);
+});
+
+test('gravity-reentry-machine: skip transiciona inmediatamente a tablet y cancela timer pendiente', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const phases: GravityModalPhase[] = [];
+  const controller = createGravityDescentController({
+    onPhaseChange: (phase) => phases.push(phase),
+  });
+
+  assert.equal(controller.open('GO_FOR_LANDING', false), 'descending');
+  assert.equal(controller.skip(), 'tablet');
+  assert.equal(controller.getPhase(), 'tablet');
+  assert.deepEqual(phases, ['descending', 'tablet']);
+
+  t.mock.timers.tick(GRAVITY_DESCENT_DURATION_MS + 1000);
+  assert.equal(controller.getPhase(), 'tablet');
+  assert.deepEqual(phases, ['descending', 'tablet']);
+
+  let cleared = 0;
+  const injected = createGravityDescentController<number>({
+    setTimer: () => 42,
+    clearTimer: () => {
+      cleared += 1;
+    },
+  });
+  assert.equal(injected.open('GO_FOR_LANDING', false), 'descending');
+  assert.equal(injected.skip(), 'tablet');
+  assert.equal(cleared, 1);
+});
+
+test('gravity-reentry-machine: open con reducedMotion=true o INSUFFICIENT_CARDIO_DATA va directo a tablet sin programar timer', () => {
+  let scheduled = 0;
+
+  const reducedCtrl = createGravityDescentController<number>({
+    setTimer: () => {
+      scheduled += 1;
+      return scheduled;
+    },
+    clearTimer: () => {},
+  });
+  assert.equal(getInitialGravityOpenPhase('GO_FOR_LANDING', true), 'tablet');
+  assert.equal(reducedCtrl.open('GO_FOR_LANDING', true), 'tablet');
+  assert.equal(reducedCtrl.getPhase(), 'tablet');
+  assert.equal(scheduled, 0);
+
+  const insufficientCtrl = createGravityDescentController<number>({
+    setTimer: () => {
+      scheduled += 1;
+      return scheduled;
+    },
+    clearTimer: () => {},
+  });
+  assert.equal(getInitialGravityOpenPhase('INSUFFICIENT_CARDIO_DATA', false), 'tablet');
+  assert.equal(insufficientCtrl.open('INSUFFICIENT_CARDIO_DATA', false), 'tablet');
+  assert.equal(insufficientCtrl.getPhase(), 'tablet');
+  assert.equal(scheduled, 0);
+});
+
+test('gravity-reentry-machine: close y dispose durante descending cancelan timer pendiente sin mutaciones tardías', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+
+  const closePhases: GravityModalPhase[] = [];
+  const closeCtrl = createGravityDescentController({
+    onPhaseChange: (phase) => closePhases.push(phase),
+  });
+  assert.equal(closeCtrl.open('GO_FOR_LANDING', false), 'descending');
+  assert.equal(closeCtrl.close(), 'closed');
+  t.mock.timers.tick(GRAVITY_DESCENT_DURATION_MS + 1000);
+  assert.equal(closeCtrl.getPhase(), 'closed');
+  assert.deepEqual(closePhases, ['descending', 'closed']);
+
+  const disposePhases: GravityModalPhase[] = [];
+  const disposeCtrl = createGravityDescentController({
+    onPhaseChange: (phase) => disposePhases.push(phase),
+  });
+  assert.equal(disposeCtrl.open('GO_FOR_LANDING', false), 'descending');
+  disposeCtrl.dispose();
+  t.mock.timers.tick(GRAVITY_DESCENT_DURATION_MS + 1000);
+  assert.deepEqual(disposePhases, ['descending']);
+  assert.equal(disposeCtrl.close(), 'closed');
+  t.mock.timers.tick(GRAVITY_DESCENT_DURATION_MS + 1000);
+  assert.equal(disposeCtrl.getPhase(), 'closed');
+  assert.deepEqual(disposePhases, ['descending', 'closed']);
+});
+
+test('gravity-reentry-machine: replay reinicia a descending y cancela timer previo sin race conditions', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const phases: GravityModalPhase[] = [];
+  const controller = createGravityDescentController({
+    onPhaseChange: (phase) => phases.push(phase),
+  });
+
+  assert.equal(controller.open('GO_FOR_LANDING', false), 'descending');
+  t.mock.timers.tick(1500);
+  assert.equal(controller.getPhase(), 'descending');
+
+  assert.equal(controller.replay('GO_FOR_LANDING', false), 'descending');
+  t.mock.timers.tick(600);
+  assert.equal(controller.getPhase(), 'descending');
+
+  t.mock.timers.tick(1400);
+  assert.equal(controller.getPhase(), 'tablet');
+
+  assert.equal(controller.replay('COUNTERMEASURE_REQUIRED_BEFORE_LANDING', false), 'descending');
+  assert.equal(controller.getPhase(), 'descending');
+  t.mock.timers.tick(GRAVITY_DESCENT_DURATION_MS);
+  assert.equal(controller.getPhase(), 'tablet');
+  assert.deepEqual(phases, ['descending', 'tablet', 'descending', 'tablet']);
+});
+
+test('gravity-reentry-machine: interpolateMetric maneja null/NaN/extremos y prefersReducedMotionSafe es seguro en SSR', () => {
+  assert.equal(interpolateMetric(null, 120, 0.5), null);
+  assert.equal(interpolateMetric(70, null, 0.5), null);
+  assert.equal(interpolateMetric(Number.NaN, 120, 0.5), null);
+  assert.equal(interpolateMetric(70, Number.POSITIVE_INFINITY, 0.5), null);
+
+  assert.equal(interpolateMetric(70, 130, 0), 70);
+  assert.equal(interpolateMetric(70, 130, 1), 130);
+  assert.equal(interpolateMetric(70, 130, -0.5), 70);
+  assert.equal(interpolateMetric(70, 130, 1.5), 130);
+  assert.equal(interpolateMetric(70, 130, Number.NaN), 70);
+
+  const mid = interpolateMetric(70, 130, 0.5);
+  assert.ok(typeof mid === 'number' && Number.isFinite(mid) && mid > 70 && mid < 130);
+
+  assert.equal(typeof window, 'undefined');
+  assert.equal(prefersReducedMotionSafe(), false);
+  assert.equal(withReducedMotionWindow(true, () => prefersReducedMotionSafe()), true);
+  assert.equal(withReducedMotionWindow(false, () => prefersReducedMotionSafe()), false);
+});
+
+test('SSR NasaDecisionCard prioriza Simular regreso a gravedad y colapsa cohorte en <details>', async () => {
+  await withCssStub(async () => {
+    const { NasaDecisionCard } = await import('../src/components/home/studio/NasaDecisionCard');
+    const vitals = { heart_rate: 72, bp_systolic: 118, bp_diastolic: 76 };
+    const html = renderToStaticMarkup(
+      createElement(NasaDecisionCard, {
+        vitals,
+        evaluation: evaluateHealth(vitals),
+        context: DEFAULT_CONTEXT,
+      })
+    );
+
+    assert.equal(html.includes('Iniciar simulacro'), true);
+    assert.equal((html.match(/Referencia NASA/g) ?? []).length, 3);
+    assert.equal((html.match(/Ver explicación/g) ?? []).length, 2);
+    assert.equal((html.match(/<details /g) ?? []).length, 1);
+    const gravityIdx = html.indexOf('Simular regreso a gravedad');
+    const cohortIdx = html.indexOf('Tu medición en la cohorte');
+    assert.ok(gravityIdx !== -1 && cohortIdx !== -1 && gravityIdx < cohortIdx);
+  });
+});
+
+test('SSR NasaDecisionCard con variant="cohort-only" omite triage y Simular regreso a gravedad', async () => {
+  await withCssStub(async () => {
+    const { NasaDecisionCard } = await import('../src/components/home/studio/NasaDecisionCard');
+    const vitals = { heart_rate: 72, bp_systolic: 118, bp_diastolic: 76 };
+    const html = renderToStaticMarkup(
+      createElement(NasaDecisionCard, {
+        vitals,
+        evaluation: evaluateHealth(vitals),
+        context: DEFAULT_CONTEXT,
+        variant: 'cohort-only',
+      })
+    );
+
+    assert.equal(html.includes('nasa-comparison-standalone'), true);
+    assert.equal(html.includes('Tu medición en la cohorte'), true);
+    assert.equal((html.match(/Referencia NASA/g) ?? []).length, 3);
+    assert.equal(html.includes('nasa-triage-card'), false);
+    assert.equal(html.includes('Simular regreso a gravedad'), false);
+    assert.equal(html.includes('Iniciar simulacro'), false);
+  });
+});
+
+test('SSR GravityReentryModal cubre los 4 estados de LandingReadinessVerdict, accesibilidad y nota sistémica', async () => {
+  await withCssStub(async () => {
+    const { GravityReentryModal } = await import('../src/components/home/studio/GravityReentryModal');
+
+    const renderModal = (
+      vitals: PartialVitalValues,
+      options: {
+        stressMode?: GravityStressMode;
+        context?: typeof DEFAULT_CONTEXT;
+        open?: boolean;
+        reducedMotion?: boolean;
+        onPingEarth?: () => void;
+        onGoToControls?: () => void;
+      } = {}
+    ) => {
+      const stressMode = options.stressMode ?? 'post_bedrest_median';
+      const context = options.context ?? DEFAULT_CONTEXT;
+      const evaluation = evaluateHealth(vitals, { context });
+      const decision = evaluateNasaOperationalDecision(vitals, evaluation, context, stressMode);
+
+      const render = () =>
+        renderToStaticMarkup(
+          createElement(GravityReentryModal, {
+            open: options.open ?? true,
+            sim: decision.gravitySimulation,
+            decision,
+            stressMode,
+            onChangeStressMode: () => {},
+            onClose: () => {},
+            onPingEarth: options.onPingEarth,
+            onGoToControls: options.onGoToControls,
+          })
+        );
+
+      const html =
+        options.reducedMotion === undefined
+          ? render()
+          : withReducedMotionWindow(options.reducedMotion, render);
+
+      return { html, decision, sim: decision.gravitySimulation };
+    };
+
+    const assertA11yDialog = (html: string) => {
+      assert.equal(html.includes('role="dialog"'), true);
+      assert.equal(html.includes('aria-modal="true"'), true);
+      assert.equal(html.includes('aria-labelledby="gravity-modal-title"'), true);
+      assert.equal(html.includes('id="gravity-modal-title"'), true);
+    };
+
+    // Modal cerrado no renderiza nada
+    const closed = renderModal({ heart_rate: 65, bp_systolic: 115, bp_diastolic: 75 }, { open: false });
+    assert.equal(closed.html, '');
+
+    // Modal abierto en fase descending (SSR sin window) muestra la nave y botón Saltar accesible
+    const descending = renderModal({ heart_rate: 65, bp_systolic: 115, bp_diastolic: 75 });
+    assertA11yDialog(descending.html);
+    assert.equal(descending.html.includes('gravity-rocket-svg'), true);
+    assert.equal(descending.html.includes('Saltar'), true);
+
+    // 1) GO_FOR_LANDING nominal (sin restricción sistémica)
+    const goNominal = renderModal(
+      { heart_rate: 65, bp_systolic: 115, bp_diastolic: 75 },
+      { reducedMotion: true }
+    );
+    assert.equal(goNominal.sim.verdict, 'GO_FOR_LANDING');
+    assert.equal(goNominal.decision.returnToGravityReady, true);
+    assertA11yDialog(goNominal.html);
+    assert.equal(goNominal.html.includes('Apto para aterrizar'), true);
+    assert.equal(goNominal.html.includes('gravity-systemic-note'), false);
+
+    // 1b) GO_FOR_LANDING con returnToGravityReady: false por fiebre / hipoglucemia
+    const goWithFever = renderModal(
+      { heart_rate: 65, bp_systolic: 115, bp_diastolic: 75, temperature: 38.5 },
+      { reducedMotion: true }
+    );
+    assert.equal(goWithFever.sim.verdict, 'GO_FOR_LANDING');
+    assert.equal(goWithFever.decision.returnToGravityReady, false);
+    assert.equal(goWithFever.html.includes('gravity-systemic-note'), true);
+
+    const goWithHypo = renderModal(
+      { heart_rate: 65, bp_systolic: 115, bp_diastolic: 75, glucose: 50 },
+      { reducedMotion: true }
+    );
+    assert.equal(goWithHypo.sim.verdict, 'GO_FOR_LANDING');
+    assert.equal(goWithHypo.decision.returnToGravityReady, false);
+    assert.equal(goWithHypo.html.includes('gravity-systemic-note'), true);
+
+    // 2) COUNTERMEASURE_REQUIRED_BEFORE_LANDING (+60/+2/0 y +69/-16/-15)
+    const cmMedian = renderModal(
+      { heart_rate: 76, bp_systolic: 118, bp_diastolic: 76 },
+      { stressMode: 'post_bedrest_median', reducedMotion: true }
+    );
+    assert.equal(cmMedian.sim.verdict, 'COUNTERMEASURE_REQUIRED_BEFORE_LANDING');
+    assertA11yDialog(cmMedian.html);
+    assert.equal(cmMedian.html.includes('Necesitas prepararte'), true);
+    assert.equal(cmMedian.html.includes('+60 bpm al pararse'), true);
+    assert.equal(cmMedian.html.includes('+2 / 0 mmHg'), true);
+
+    const cmVulnerable = renderModal(
+      { heart_rate: 68, bp_systolic: 115, bp_diastolic: 75 },
+      { stressMode: 'post_bedrest_p25_vulnerable', reducedMotion: true }
+    );
+    assert.equal(cmVulnerable.sim.verdict, 'COUNTERMEASURE_REQUIRED_BEFORE_LANDING');
+    assert.equal(cmVulnerable.html.includes('+69 bpm al pararse'), true);
+    assert.equal(cmVulnerable.html.includes('-16 / -15 mmHg'), true);
+
+    // 3) PRESYNCOPE_ABORT_RISK (acciones sencillas y botón Avisar a Tierra si onPingEarth está presente)
+    const presyncopeWithPing = renderModal(
+      { heart_rate: 92, bp_systolic: 108, bp_diastolic: 74 },
+      { reducedMotion: true, onPingEarth: () => {} }
+    );
+    assert.equal(presyncopeWithPing.sim.verdict, 'PRESYNCOPE_ABORT_RISK');
+    assertA11yDialog(presyncopeWithPing.html);
+    assert.equal(presyncopeWithPing.html.includes('Riesgo de mareo o desmayo'), true);
+    assert.equal(presyncopeWithPing.html.includes('Avisar a Tierra'), true);
+
+    const presyncopeNoPing = renderModal(
+      { heart_rate: 92, bp_systolic: 108, bp_diastolic: 74 },
+      { reducedMotion: true }
+    );
+    assert.equal(presyncopeNoPing.html.includes('Avisar a Tierra'), false);
+
+    // 4) INSUFFICIENT_CARDIO_DATA (solo bp_diastolic, sin NaN ni 0 bpm, con Medir signos)
+    const insufficientDbpOnly = renderModal(
+      { bp_diastolic: 74 },
+      { onGoToControls: () => {} }
+    );
+    assert.equal(insufficientDbpOnly.sim.verdict, 'INSUFFICIENT_CARDIO_DATA');
+    assertA11yDialog(insufficientDbpOnly.html);
+    assert.equal(insufficientDbpOnly.html.includes('Faltan datos'), true);
+    assert.equal(insufficientDbpOnly.html.includes('—/— mmHg'), true);
+    assert.equal(insufficientDbpOnly.html.includes('>—<'), true);
+    assert.equal(insufficientDbpOnly.html.includes('NaN'), false);
+    assert.equal(insufficientDbpOnly.html.includes('0 bpm'), false);
+    assert.equal(insufficientDbpOnly.html.includes('Medir signos'), true);
+
+    const insufficientNoAction = renderModal({});
+    assert.equal(insufficientNoAction.sim.verdict, 'INSUFFICIENT_CARDIO_DATA');
+    assert.equal(insufficientNoAction.html.includes('Medir signos'), false);
+  });
+});
+
+test('SSR GravityReentryModal maneja alreadyTilted y telemetría parcial (solo heart_rate sin PA)', async () => {
+  await withCssStub(async () => {
+    const { GravityReentryModal } = await import('../src/components/home/studio/GravityReentryModal');
+
+    // Caso alreadyTilted (orthostatic_tilt / standing_tilt)
+    const tiltedContext = {
+      ...DEFAULT_CONTEXT,
+      activityState: 'orthostatic_tilt' as const,
+      posture: 'standing_tilt' as const,
+    };
+    const tiltedVitals = { heart_rate: 90, bp_systolic: 112, bp_diastolic: 74 };
+    const tiltedEval = evaluateHealth(tiltedVitals, { context: tiltedContext });
+    const tiltedDecision = evaluateNasaOperationalDecision(tiltedVitals, tiltedEval, tiltedContext);
+
+    const tiltedHtml = withReducedMotionWindow(true, () =>
+      renderToStaticMarkup(
+        createElement(GravityReentryModal, {
+          open: true,
+          sim: tiltedDecision.gravitySimulation,
+          decision: tiltedDecision,
+          stressMode: 'post_bedrest_median',
+          onChangeStressMode: () => {},
+          onClose: () => {},
+        })
+      )
+    );
+    assert.equal(tiltedDecision.gravitySimulation.appliedDeltaHr, 0);
+    assert.equal(tiltedDecision.gravitySimulation.appliedDeltaSbp, 0);
+    assert.equal(tiltedDecision.gravitySimulation.appliedDeltaDbp, 0);
+    assert.equal(tiltedHtml.includes('Sin cambio (ya estás de pie)'), true);
+
+    // Caso parcial: solo heart_rate sin PA
+    const hrOnlyVitals = { heart_rate: 72 };
+    const hrOnlyEval = evaluateHealth(hrOnlyVitals, { context: DEFAULT_CONTEXT });
+    const hrOnlyDecision = evaluateNasaOperationalDecision(hrOnlyVitals, hrOnlyEval, DEFAULT_CONTEXT);
+
+    const hrOnlyDescendingHtml = renderToStaticMarkup(
+      createElement(GravityReentryModal, {
+        open: true,
+        sim: hrOnlyDecision.gravitySimulation,
+        decision: hrOnlyDecision,
+        stressMode: 'post_bedrest_median',
+        onChangeStressMode: () => {},
+        onClose: () => {},
+      })
+    );
+    assert.equal(hrOnlyDescendingHtml.includes('NaN'), false);
+    assert.equal(hrOnlyDescendingHtml.includes('gravity-rocket-svg'), true);
+
+    const hrOnlyTabletHtml = withReducedMotionWindow(true, () =>
+      renderToStaticMarkup(
+        createElement(GravityReentryModal, {
+          open: true,
+          sim: hrOnlyDecision.gravitySimulation,
+          decision: hrOnlyDecision,
+          stressMode: 'post_bedrest_median',
+          onChangeStressMode: () => {},
+          onClose: () => {},
+        })
+      )
+    );
+    assert.equal(hrOnlyTabletHtml.includes('NaN'), false);
+    assert.equal(hrOnlyTabletHtml.includes('72 → 132 bpm'), true);
+    assert.equal(hrOnlyTabletHtml.includes('—/— mmHg'), true);
+    assert.equal(hrOnlyTabletHtml.includes('Sin lectura de presión'), true);
+    assert.equal(
+      hrOnlyTabletHtml.includes('<span class="gravity-metric-delta">+2 / 0 mmHg</span>'),
+      false
+    );
+
+    // En modo reduced-motion se oculta Repetir porque no hay animación que repetir
+    assert.equal(hrOnlyTabletHtml.includes('Repetir'), false);
+
+    // Caso orthostatic_tilt sentado (no standing_tilt): no debe decir "ya estás de pie"
+    const seatedTiltContext = {
+      ...DEFAULT_CONTEXT,
+      activityState: 'orthostatic_tilt' as const,
+      posture: 'seated' as const,
+    };
+    const seatedTiltEval = evaluateHealth(tiltedVitals, { context: seatedTiltContext });
+    const seatedTiltDecision = evaluateNasaOperationalDecision(tiltedVitals, seatedTiltEval, seatedTiltContext);
+    const seatedTiltHtml = withReducedMotionWindow(true, () =>
+      renderToStaticMarkup(
+        createElement(GravityReentryModal, {
+          open: true,
+          sim: seatedTiltDecision.gravitySimulation,
+          decision: seatedTiltDecision,
+          stressMode: 'post_bedrest_median',
+          onChangeStressMode: () => {},
+          onClose: () => {},
+        })
+      )
+    );
+    assert.equal(seatedTiltHtml.includes('Sin cambio (ya en prueba ortostática)'), true);
+    assert.equal(seatedTiltHtml.includes('ya estás de pie'), false);
   });
 });
