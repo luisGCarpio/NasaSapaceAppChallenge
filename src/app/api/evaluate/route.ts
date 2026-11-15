@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { evaluateHealth } from '@/domain/health';
+import { evaluateNasaOperationalDecision } from '@/domain/nasa/cohort-decision';
 import { parseJsonBody } from '../http-helpers';
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -22,11 +23,18 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
+  const operationalDecision = evaluateNasaOperationalDecision(
+    evaluation.vitals,
+    evaluation,
+    rawContext as never
+  );
+
   return NextResponse.json(
     {
       valid: true,
       vitals: evaluation.vitals,
       evaluation,
+      operationalDecision,
     },
     { status: 200 }
   );

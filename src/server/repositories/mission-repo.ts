@@ -1,10 +1,22 @@
 import crypto from 'node:crypto';
-import { evaluateHealth, type HealthStatus } from '@/domain/health';
+import { STATUS, evaluateHealth, type HealthStatus } from '@/domain/health';
 import { XP_PER_LEVEL } from '@/domain/missions/mission-catalog';
 import { computeNextStreak, getMissionDateKey } from '@/domain/missions/mission-date';
 import { MAX_COMMS_LOG, saveDb, withDbLock } from '../storage/file-store';
 import type { CommsLogEntry, PublicUserState } from '../storage/types';
-import { buildPublicUserState, ensureDailyMissionsState } from './state-presenter';
+import {
+  buildPublicUserState,
+  ensureDailyMissionsState,
+  getPriorObservationsForCurrent,
+} from './state-presenter';
+
+const VALID_COMMS_STATUSES = new Set<HealthStatus>([
+  STATUS.GREEN,
+  STATUS.YELLOW,
+  STATUS.RED,
+  STATUS.INSUFFICIENT_DATA,
+]);
+const MAX_COMMS_MESSAGE_LENGTH = 4000;
 
 export type CompleteMissionResult =
   | { ok: true; status: 200; awardedXp: number; alreadyAwardedToday: boolean; state: PublicUserState }
@@ -30,7 +42,7 @@ export async function completeUserMission(userId: string, missionId: string): Pr
     if (mission.id === 'exercise' && user.currentVitals) {
       const currentEval = evaluateHealth(user.currentVitals, {
         context: user.currentContext ?? undefined,
-        priorObservations: (user.observations ?? []).slice(0, -1),
+        priorObservations: getPriorObservationsForCurrent(user),
       });
       if (currentEval.clinicalRestrictions.restrictStrenuousExercise) {
         return {
@@ -109,6 +121,34 @@ export async function recordUserCommsLog(input: {
   if (!input.message || typeof input.message !== 'string' || !input.message.trim()) {
     return { ok: false, status: 400, error: 'El mensaje de reporte es obligatorio.' };
   }
+  const trimmedMessage = input.message.trim();
+  if (trimmedMessage.length > MAX_COMMS_MESSAGE_LENGTH) {
+    return {
+      ok: false,
+      status: 400,
+      error: `El mensaje de reporte no puede exceder ${MAX_COMMS_MESSAGE_LENGTH} caracteres.`,
+    };
+  }
+  if (!VALID_COMMS_STATUSES.has(input.overallStatus)) {
+    return {
+      ok: false,
+      status: 400,
+      error: 'overallStatus inválido. Valores permitidos: GREEN, YELLOW, RED, INSUFFICIENT_DATA.',
+    };
+  }
+  if (
+    input.readinessScore !== null &&
+    (typeof input.readinessScore !== 'number' ||
+      !Number.isFinite(input.readinessScore) ||
+      input.readinessScore < 0 ||
+      input.readinessScore > 100)
+  ) {
+    return {
+      ok: false,
+      status: 400,
+      error: 'readinessScore debe ser null o un número finito entre 0 y 100.',
+    };
+  }
 
   return withDbLock((db) => {
     const user = db.users[input.userId];
@@ -119,8 +159,8 @@ export async function recordUserCommsLog(input: {
       timestamp: new Date().toISOString(),
       overallStatus: input.overallStatus,
       readinessScore: input.readinessScore,
-      message: input.message.trim(),
-      copiedToClipboard: Boolean(input.copiedToClipboard),
+      message: trimmedMessage,
+      copiedToClipboard: input.copiedToClipboard === true,
     };
 
     user.commsLog.push(entry);

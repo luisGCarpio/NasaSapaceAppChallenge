@@ -83,12 +83,15 @@ CREATE TABLE IF NOT EXISTS public.comms_logs (
 -- Seguridad estricta por usuario autenticado (Zero Trust, sin acceso anónimo)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.checkins ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.health_observations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mission_completions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.comms_logs ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON public.profiles, public.checkins, public.mission_completions, public.comms_logs FROM anon;
+REVOKE ALL ON TABLE public.health_observations FROM anon;
 GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.checkins TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.health_observations TO authenticated;
 GRANT SELECT, INSERT ON public.mission_completions TO authenticated;
 GRANT SELECT, INSERT ON public.comms_logs TO authenticated;
 
@@ -100,6 +103,9 @@ CREATE POLICY profiles_update_own ON public.profiles
   FOR UPDATE TO authenticated USING ((SELECT auth.uid()) = id) WITH CHECK ((SELECT auth.uid()) = id);
 
 CREATE POLICY checkins_own_rows ON public.checkins
+  FOR ALL TO authenticated USING ((SELECT auth.uid()) = user_id) WITH CHECK ((SELECT auth.uid()) = user_id);
+
+CREATE POLICY health_observations_own_rows ON public.health_observations
   FOR ALL TO authenticated USING ((SELECT auth.uid()) = user_id) WITH CHECK ((SELECT auth.uid()) = user_id);
 
 CREATE POLICY mission_completions_own_rows ON public.mission_completions

@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createDefaultSyncMeta, createSeedDatabase } from './seed-data';
@@ -39,10 +40,7 @@ function tryReadValidDb(filePath: string): DbState | null {
   }
 }
 
-/**
- * Carga el estado local con respaldo automático desde `.bak` si el JSON principal se corrompió.
- */
-export function loadDb(): DbState {
+function loadDbInternal(allowPersistRecovery: boolean): DbState {
   const dbPath = getDbFilePath();
   const bakPath = `${dbPath}.bak`;
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -52,34 +50,59 @@ export function loadDb(): DbState {
 
   const backup = tryReadValidDb(bakPath);
   if (backup) {
-    saveDb(backup);
+    if (allowPersistRecovery) {
+      saveDb(backup);
+    }
     return backup;
   }
 
   const seeded = createSeedDatabase();
-  saveDb(seeded);
+  if (allowPersistRecovery) {
+    saveDb(seeded);
+  }
   return seeded;
 }
 
 /**
- * Escritura atómica (.tmp -> respaldo .bak -> rename) para evitar corrupción parcial en disco.
+ * Carga el estado local con respaldo automático desde `.bak` si el JSON principal se corrompió.
+ * Las lecturas fuera de `withDbLock` nunca sobrescriben `ares-db.json` para evitar carreras con escrituras concurrentes.
+ */
+export function loadDb(): DbState {
+  return loadDbInternal(false);
+}
+
+/**
+ * Lectura serializada bajo `withDbLock` para evitar colisiones con escrituras o renombres concurrentes.
+ */
+export function readDb(): Promise<DbState> {
+  return withDbLock((db) => db);
+}
+
+/**
+ * Escritura atómica (.tmp único -> respaldo .bak -> rename) para evitar corrupción parcial en disco.
  */
 export function saveDb(db: DbState): void {
   const dbPath = getDbFilePath();
-  const tmpPath = `${dbPath}.tmp`;
+  const tmpPath = `${dbPath}.${process.pid}.${Date.now()}.${crypto.randomUUID()}.tmp`;
   const bakPath = `${dbPath}.bak`;
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
   const serialized = JSON.stringify(db, null, 2);
-  fs.writeFileSync(tmpPath, serialized, 'utf8');
+  try {
+    fs.writeFileSync(tmpPath, serialized, 'utf8');
 
-  if (fs.existsSync(dbPath)) {
-    const current = tryReadValidDb(dbPath);
-    if (current) {
-      fs.copyFileSync(dbPath, bakPath);
+    if (fs.existsSync(dbPath)) {
+      const current = tryReadValidDb(dbPath);
+      if (current) {
+        fs.copyFileSync(dbPath, bakPath);
+      }
+    }
+    fs.renameSync(tmpPath, dbPath);
+  } finally {
+    if (fs.existsSync(tmpPath)) {
+      fs.rmSync(tmpPath, { force: true });
     }
   }
-  fs.renameSync(tmpPath, dbPath);
 }
 
 const writeLocks = new Map<string, Promise<unknown>>();
@@ -99,7 +122,7 @@ export async function withDbLock<T>(fn: (db: DbState) => Promise<T> | T): Promis
 
   await previous;
   try {
-    const db = loadDb();
+    const db = loadDbInternal(true);
     return await fn(db);
   } finally {
     release();

@@ -6,7 +6,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   const { id } = await context.params;
-  if (!(id in SCENARIOS)) {
+  if (!Object.hasOwn(SCENARIOS, id)) {
     return NextResponse.json({ error: `Escenario desconocido: ${id}` }, { status: 404 });
   }
 

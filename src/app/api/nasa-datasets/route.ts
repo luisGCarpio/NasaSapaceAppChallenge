@@ -37,7 +37,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ inventory, benchmark, subjects }, { status: 200 });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Error leyendo datos NASA.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[api/nasa-datasets] Error consultando datasets NASA:', err);
+    return NextResponse.json(
+      { error: 'Error interno al consultar los datos NASA.' },
+      { status: 500 }
+    );
   }
 }

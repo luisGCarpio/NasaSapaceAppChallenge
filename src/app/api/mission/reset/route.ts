@@ -3,7 +3,7 @@ import { resetUserMissions } from '@/server/repositories/mission-repo';
 import { requireAuth } from '../../http-helpers';
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const auth = requireAuth(request);
+  const auth = await requireAuth(request);
   if (!auth.ok) return auth.response;
 
   const result = await resetUserMissions(auth.user.id);

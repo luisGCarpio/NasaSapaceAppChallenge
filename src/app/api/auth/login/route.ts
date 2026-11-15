@@ -12,7 +12,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     username: typeof username === 'string' ? username : undefined,
     email: typeof email === 'string' ? email : undefined,
     password: typeof password === 'string' ? password : undefined,
-    quickLogin: Boolean(quickLogin),
+    quickLogin: quickLogin === true,
   });
 
   if (!result.ok) {

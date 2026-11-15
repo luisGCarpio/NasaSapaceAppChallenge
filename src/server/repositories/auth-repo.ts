@@ -8,9 +8,11 @@ import {
   verifyPassword,
   verifySessionToken,
 } from '../auth/crypto-auth';
-import { loadDb, saveDb, withDbLock } from '../storage/file-store';
+import { readDb, saveDb, withDbLock } from '../storage/file-store';
 import type { DbState, DbUser, PublicUser, PublicUserState } from '../storage/types';
 import { buildPublicUserState, toPublicUser } from './state-presenter';
+
+const MAX_PASSWORD_LENGTH = 256;
 
 const registerSchema = z.object({
   name: z.string().trim().min(2, 'El nombre debe tener al menos 2 caracteres.'),
@@ -20,7 +22,10 @@ const registerSchema = z.object({
     .regex(/^[a-zA-Z0-9_.-]{3,32}$/, 'El usuario debe tener 3-32 caracteres alfanuméricos.'),
   email: z.string().trim().email('Correo electrónico inválido.').optional().or(z.literal('')),
   role: z.string().trim().min(2).max(80).optional(),
-  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.'),
+  password: z
+    .string()
+    .min(6, 'La contraseña debe tener al menos 6 caracteres.')
+    .max(MAX_PASSWORD_LENGTH, 'La contraseña no puede exceder 256 caracteres.'),
 });
 
 export type AuthActionResult =
@@ -68,6 +73,9 @@ export async function loginUser(input: {
   }
   if (!rawIdentifier || !password) {
     return { ok: false, status: 400, error: 'Se requiere usuario/correo y contraseña.' };
+  }
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    return { ok: false, status: 400, error: 'La contraseña excede la longitud máxima permitida.' };
   }
 
   return withDbLock((db) => {
@@ -130,11 +138,13 @@ export async function registerUser(rawInput: unknown): Promise<AuthActionResult>
   });
 }
 
-export function resolveAuthenticatedUser(token: string | null): { db: DbState; user: DbUser; sid: string } | null {
+export async function resolveAuthenticatedUser(
+  token: string | null
+): Promise<{ db: DbState; user: DbUser; sid: string } | null> {
   const payload = verifySessionToken(token);
   if (!payload) return null;
 
-  const db = loadDb();
+  const db = await readDb();
   const session = db.sessions[payload.sid];
   if (!session || session.userId !== payload.sub) return null;
   if (new Date(session.expiresAt).getTime() <= Date.now()) return null;

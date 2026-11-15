@@ -3,7 +3,7 @@ import { completeUserMission } from '@/server/repositories/mission-repo';
 import { parseJsonBody, requireAuth } from '../../http-helpers';
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const auth = requireAuth(request);
+  const auth = await requireAuth(request);
   if (!auth.ok) return auth.response;
 
   const bodyResult = await parseJsonBody(request);

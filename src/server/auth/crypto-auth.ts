@@ -12,8 +12,12 @@ export interface SessionTokenPayload {
 const globalForSecret = globalThis as typeof globalThis & { __aresSessionSecret?: string };
 
 function getSessionSecret(): string {
-  if (process.env.ARES_SESSION_SECRET && process.env.ARES_SESSION_SECRET.length >= 16) {
-    return process.env.ARES_SESSION_SECRET;
+  const envSecret = process.env.ARES_SESSION_SECRET;
+  if (envSecret && envSecret.length >= 16) {
+    return envSecret;
+  }
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('ARES_SESSION_SECRET debe configurarse con al menos 16 caracteres en producción.');
   }
   if (!globalForSecret.__aresSessionSecret) {
     globalForSecret.__aresSessionSecret = crypto.randomBytes(32).toString('hex');
@@ -68,8 +72,9 @@ export function verifySessionToken(token: string | null | undefined): SessionTok
   const [encoded, providedSig] = parts;
   if (!encoded || !providedSig) return null;
 
+  const secret = getSessionSecret();
   try {
-    const expectedSig = crypto.createHmac('sha256', getSessionSecret()).update(encoded).digest('base64url');
+    const expectedSig = crypto.createHmac('sha256', secret).update(encoded).digest('base64url');
     const providedBuf = Buffer.from(providedSig, 'utf8');
     const expectedBuf = Buffer.from(expectedSig, 'utf8');
     if (providedBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(providedBuf, expectedBuf)) {
@@ -104,7 +109,12 @@ export function extractAuthToken(request: Request): string | null {
     const key = raw.slice(0, idx).trim();
     if (key === SESSION_COOKIE_NAME) {
       const value = raw.slice(idx + 1).trim();
-      if (value) return decodeURIComponent(value);
+      if (!value) return null;
+      try {
+        return decodeURIComponent(value);
+      } catch {
+        return null;
+      }
     }
   }
   return null;
