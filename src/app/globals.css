@@ -7,7 +7,9 @@
 
   /* Colores divertidos no típicos */
   --tangerine: #FF5A26;
+  --tangerine-dark: #C2350A;
   --periwinkle: #5B6BFF;
+  --periwinkle-dark: #4353E8;
   --bubblegum: #FF7EB6;
   --lavender-soft: #ECEEFF;
 
@@ -24,6 +26,7 @@
   --radius-md: 14px;
   --shadow-hard: 0 4px 0 var(--ink);
   --bpm-duration: 0.85s;
+  --font-mono: 'Space Mono', monospace;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -50,6 +53,7 @@ h1, h2, h3, .font-display {
 
 /* TOP BAR */
 .topbar {
+  width: 100%;
   max-width: 1180px;
   margin: 0 auto 18px;
   display: flex;
@@ -68,7 +72,7 @@ h1, h2, h3, .font-display {
 .brand-badge {
   width: 46px;
   height: 46px;
-  background: var(--tangerine);
+  background: var(--tangerine-dark);
   border: var(--border);
   border-radius: 14px;
   box-shadow: var(--shadow-hard);
@@ -77,12 +81,20 @@ h1, h2, h3, .font-display {
   color: #FFF;
 }
 
-.brand h1 { font-size: 1.55rem; line-height: 1; }
+.brand h1,
+.brand .brand-title {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-size: 1.55rem;
+  line-height: 1;
+  display: block;
+}
 .brand p { font-size: 0.8rem; color: var(--ink-muted); font-weight: 700; margin-top: 2px; }
 
 /* BOTONES TÁCTILES */
 .btn-tactile {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: inherit;
   font-weight: 800;
   font-size: 0.82rem;
   border: 2px solid var(--ink);
@@ -110,6 +122,8 @@ h1, h2, h3, .font-display {
 
 /* LAYOUT CON MENÚ LATERAL EN PC */
 .app-layout {
+  width: 100%;
+  min-width: 0;
   max-width: 1180px;
   margin: 0 auto;
   display: grid;
@@ -132,7 +146,7 @@ h1, h2, h3, .font-display {
 }
 
 .nav-btn {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: inherit;
   font-weight: 800;
   font-size: 0.88rem;
   text-align: left;
@@ -160,7 +174,7 @@ h1, h2, h3, .font-display {
 }
 
 .nav-btn.active {
-  background: var(--periwinkle);
+  background: var(--periwinkle-dark);
   color: #FFF;
 }
 
@@ -170,8 +184,17 @@ h1, h2, h3, .font-display {
 
 .view-container {
   width: 100%;
+  min-width: 0;
   max-width: 680px;
   margin: 0 auto;
+}
+
+.view-heading {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.45rem;
+  line-height: 1.15;
+  margin-bottom: 12px;
+  color: var(--ink);
 }
 
 .card {
@@ -215,6 +238,7 @@ h1, h2, h3, .font-display {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   margin-bottom: 10px;
   font-weight: 800;
   font-size: 0.88rem;
@@ -260,18 +284,19 @@ h1, h2, h3, .font-display {
 
 /* CHUNKY SLIDERS */
 input[type="range"] {
+  appearance: none;
   -webkit-appearance: none;
   width: 100%;
   height: 12px;
   background: var(--surface-alt);
   border: 2px solid var(--ink);
   border-radius: 999px;
-  outline: none;
   cursor: pointer;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
+  appearance: none;
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -285,14 +310,36 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.12); }
 input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(0.96); }
 
+input[type="range"]::-moz-range-track {
+  height: 12px;
+  background: var(--surface-alt);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--tangerine);
+  border: 2.5px solid var(--ink);
+  box-shadow: 0 2px 0 var(--ink);
+  cursor: grab;
+  transition: transform 0.1s;
+}
+
+input[type="range"]::-moz-range-thumb:hover { transform: scale(1.12); }
+input[type="range"]::-moz-range-thumb:active { cursor: grabbing; transform: scale(0.96); }
+
 /* SELECTOR DE ÁNIMO VECTORIAL */
 .mood-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
 }
 
 .mood-btn {
+  font-family: inherit;
   border: 2px solid var(--ink);
   background: var(--surface);
   color: var(--ink);
@@ -316,7 +363,7 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 
 .dual-bp {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -340,8 +387,10 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 
 .stage-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 6px;
   margin-bottom: 4px;
 }
 
@@ -361,13 +410,15 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 
 .astro-svg-wrap {
   position: relative;
-  height: 290px;
+  min-height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .astro-float {
+  max-width: 100%;
+  height: auto;
   animation: floatAstro 4s ease-in-out infinite;
 }
 
@@ -377,7 +428,8 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 }
 
 .heart-beat {
-  transform-origin: 150px 175px;
+  transform-origin: 150px 166px;
+  transform-box: view-box;
   animation: pulseHeart var(--bpm-duration) ease-in-out infinite;
 }
 
@@ -450,6 +502,7 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 }
 
 .action-chip {
+  font-family: inherit;
   background: var(--surface);
   color: var(--ink);
   border: 2px solid var(--ink);
@@ -466,7 +519,7 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 }
 .action-chip:hover { background: var(--yellow-bg); transform: translateY(-1px); }
 .action-chip:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
-.action-chip.primary-alert { background: var(--tangerine); color: #FFF; }
+.action-chip.primary-alert { background: var(--tangerine-dark); color: #FFF; }
 
 /* PANEL DERECHO: GRÁFICAS Y GAMIFICACIÓN */
 .right-stack {
@@ -477,9 +530,12 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 
 .chart-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
+  margin-bottom: 10px;
 }
 .chart-tab {
+  font-family: inherit;
   font-size: 0.72rem;
   font-weight: 800;
   padding: 4px 9px;
@@ -490,7 +546,7 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
   cursor: pointer;
 }
 .chart-tab.active {
-  background: var(--periwinkle);
+  background: var(--periwinkle-dark);
   color: #FFF;
 }
 
@@ -536,6 +592,7 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 }
 
 .mission-btn {
+  font-family: inherit;
   border: 2px solid var(--ink);
   background: #FFF;
   color: var(--ink);
@@ -559,11 +616,13 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 .mission-top {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 8px;
   font-weight: 800;
   font-size: 0.8rem;
 }
 .mission-xp {
+  flex-shrink: 0;
   font-family: 'Space Mono', monospace;
   font-size: 0.7rem;
   background: var(--yellow-bg);
@@ -575,7 +634,7 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 /* BOTÓN DE COMUNICACIÓN A TIERRA */
 .earth-btn {
   width: 100%;
-  background: var(--periwinkle);
+  background: var(--periwinkle-dark);
   color: #FFF;
   border: var(--border);
   border-radius: 14px;
@@ -655,7 +714,7 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 }
 
 .bottom-nav-btn {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: inherit;
   font-weight: 800;
   font-size: 0.72rem;
   border: 2px solid var(--ink);
@@ -679,7 +738,7 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 }
 
 .bottom-nav-btn.active {
-  background: var(--periwinkle);
+  background: var(--periwinkle-dark);
   color: #FFF;
 }
 
@@ -787,15 +846,17 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 }
 
 .measure-toggle {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: inherit;
   font-size: 0.68rem;
   font-weight: 800;
   border: 1.5px solid var(--ink);
   border-radius: 8px;
-  padding: 2px 7px;
+  padding: 2px 10px;
   background: var(--green-bg);
   color: var(--ink);
   cursor: pointer;
+  white-space: nowrap;
+  flex: none;
 }
 
 .measure-toggle.omitted {
@@ -816,7 +877,7 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 
 .context-select {
   width: 100%;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: inherit;
   font-weight: 700;
   font-size: 0.78rem;
   padding: 7px 10px;
@@ -833,19 +894,33 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
 }
 
 .chip-toggle {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: inherit;
   font-size: 0.72rem;
   font-weight: 800;
   padding: 4px 10px;
   border: 2px solid var(--ink);
   border-radius: 999px;
   background: var(--surface);
+  color: var(--ink);
   cursor: pointer;
 }
 
 .chip-toggle.active {
   background: var(--bubblegum);
   box-shadow: 0 2px 0 var(--ink);
+}
+
+.btn-tactile:disabled,
+.action-chip:disabled,
+.mission-btn:disabled,
+.earth-btn:disabled,
+.chart-tab:disabled,
+.measure-toggle:disabled,
+.chip-toggle:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .mission-btn.locked,
@@ -924,3 +999,468 @@ input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: 
   }
 }
 
+
+
+/* Disposición de tarjetas para pantallas amplias */
+@media (min-width: 901px) {
+  .app-layout {
+    max-width: 1600px;
+    grid-template-columns: 230px minmax(0, 1fr);
+  }
+
+  .view-container {
+    max-width: none;
+    min-width: 0;
+  }
+
+  .center-stack,
+  .controls-stack,
+  .right-stack {
+    display: grid;
+    gap: 18px;
+    align-items: start;
+  }
+
+  .center-stack {
+    grid-template-columns: minmax(280px, 0.9fr) minmax(340px, 1.1fr);
+  }
+
+  .center-stack > .nasa-banner,
+  .center-stack > #nasaDecisionCard {
+    grid-column: 1 / -1;
+  }
+
+  .controls-stack {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .controls-stack > .card,
+  .controls-stack > #group-context {
+    grid-column: 1 / -1;
+  }
+
+  .controls-stack > #group-mind,
+  .controls-stack > #group-heart,
+  .controls-stack > #group-body {
+    grid-column: span 2;
+    align-self: stretch;
+  }
+
+  .monitor-layout {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  }
+
+  .missions-layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  }
+
+  .nasa-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .center-stack > *,
+  .controls-stack > *,
+  .right-stack > * {
+    min-width: 0;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1359px) {
+  .controls-stack > #group-mind,
+  .controls-stack > #group-heart {
+    grid-column: span 3;
+  }
+
+  .controls-stack > #group-body {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1200px) {
+  .nasa-layout,
+  .monitor-layout,
+  .missions-layout,
+  .center-stack {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.sidebar-brand {
+  display: none;
+}
+
+.sidebar-astronaut {
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+.sidebar-astronaut .astro-stage {
+  padding: 12px;
+  box-shadow: none;
+}
+
+.sidebar-astronaut .stage-header {
+  justify-content: center;
+}
+
+.sidebar-astronaut .stage-header > span,
+.sidebar-astronaut .floating-hint {
+  display: none;
+}
+
+.sidebar-astronaut .traffic-badge {
+  font-size: 0.72rem;
+  padding: 5px 9px;
+}
+
+.sidebar-astronaut .astro-svg-wrap {
+  min-height: 0;
+  height: auto;
+}
+
+.sidebar-astronaut .astro-float {
+  display: block;
+  width: min(100%, 175px);
+  height: auto;
+}
+
+.nasa-decision {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.nasa-decision > .trace-box,
+.nasa-decision > .nasa-comparison {
+  margin-bottom: 0 !important;
+}
+
+@media (min-width: 901px) {
+  body {
+    padding: 18px 24px 32px 264px;
+  }
+
+  .topbar {
+    max-width: 1600px;
+    justify-content: flex-end;
+    min-height: 46px;
+  }
+
+  .topbar > .brand {
+    display: none;
+  }
+
+  .app-layout {
+    display: block;
+    width: 100%;
+  }
+
+  .sidebar-nav {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 240px;
+    height: 100dvh;
+    overflow-y: auto;
+    border-width: 0 2.5px 0 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 24px 14px;
+    z-index: 30;
+  }
+
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .sidebar-brand h1,
+  .sidebar-brand .brand-title {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-size: 1.3rem;
+    line-height: 1.1;
+    display: block;
+  }
+
+  .sidebar-brand p {
+    margin-top: 4px;
+    color: var(--ink-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+
+  .sidebar-brand .brand-badge {
+    flex: 0 0 44px;
+  }
+}
+
+@media (min-width: 1120px) {
+  .nasa-decision {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px 20px;
+    align-items: start;
+  }
+
+  .nasa-decision > .group-head,
+  .nasa-decision > .trace-box:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+
+/* Lectura y navegación */
+.card,
+.system-group,
+.astro-stage,
+.diagnosis-card {
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.btn-tactile,
+.nav-btn,
+.action-chip,
+.chart-tab,
+.chip-toggle {
+  min-height: 44px;
+  font-size: 0.9rem;
+}
+
+.session-pill,
+.val-pill,
+.meta-pill {
+  font-size: 0.8rem;
+}
+
+.topbar-right .val-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.card-title {
+  font-size: 1.2rem;
+}
+
+.empty-message {
+  color: var(--ink-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.observation-list {
+  display: grid;
+  gap: 0;
+}
+
+.observation-item {
+  padding: 14px 0;
+  border-top: 1px solid #d8d2c5;
+}
+
+.observation-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 800;
+}
+
+.observation-item p {
+  margin-top: 6px;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  body {
+    padding: 14px 14px calc(100px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .topbar {
+    align-items: center;
+  }
+
+  .brand h1,
+  .brand .brand-title {
+    font-size: 1.25rem;
+  }
+
+  .brand p {
+    font-size: 0.8rem;
+  }
+
+  .topbar-right {
+    gap: 6px;
+  }
+
+  .bottom-nav {
+    gap: 2px;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .bottom-nav-btn {
+    min-width: 0;
+    min-height: 54px;
+    padding: 5px 2px;
+    border: 0;
+    box-shadow: none;
+    font-size: 0.7rem;
+    line-height: 1.1;
+  }
+
+  .bottom-nav-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .group-head {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .card,
+  .system-group,
+  .diagnosis-card {
+    padding: 16px;
+  }
+
+  .toast {
+    max-width: calc(100vw - 28px);
+    width: max-content;
+    text-align: center;
+  }
+}
+
+@media (max-width: 390px) {
+  .brand-badge {
+    width: 38px;
+    height: 38px;
+  }
+
+  .topbar-right .session-pill {
+    display: none;
+  }
+
+  .bottom-nav-btn {
+    font-size: 0.64rem;
+  }
+
+  .astro-svg-wrap {
+    min-height: 240px;
+    padding-top: 30px;
+  }
+
+  .floating-hint {
+    top: 0 !important;
+    font-size: 0.66rem;
+    padding: 3px 8px;
+  }
+
+  #floatHintLeft {
+    left: 4px !important;
+  }
+
+  #floatHintRight {
+    right: 4px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .missions-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Restaurar espaciado tipográfico dentro de bloques con texto rico */
+.trace-box h4,
+.diagnosis-card h4,
+.nasa-decision h4,
+.nasa-details h4 {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+
+.trace-box p,
+.diagnosis-card p,
+.nasa-decision p,
+.nasa-details p {
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+
+.trace-box p:last-child,
+.diagnosis-card p:last-child,
+.nasa-decision p:last-child,
+.nasa-details p:last-child {
+  margin-bottom: 0;
+}
+
+.trace-box ul,
+.trace-box ol,
+.diagnosis-card ul,
+.diagnosis-card ol,
+.nasa-decision ul,
+.nasa-decision ol,
+.nasa-details ul,
+.nasa-details ol {
+  margin: 8px 0;
+  padding-left: 1.4em;
+}
+
+.trace-box li + li,
+.diagnosis-card li + li,
+.nasa-decision li + li,
+.nasa-details li + li {
+  margin-top: 4px;
+}
+
+/* Foco visible WCAG AA */
+input[type="range"]:focus-visible,
+.hotspot:focus-visible,
+.nav-btn:focus-visible,
+.bottom-nav-btn:focus-visible,
+.btn-tactile:focus-visible,
+.action-chip:focus-visible,
+.mood-btn:focus-visible,
+.chip-toggle:focus-visible,
+.mission-btn:focus-visible,
+.chart-tab:focus-visible,
+.measure-toggle:focus-visible,
+.earth-btn:focus-visible,
+.context-select:focus-visible,
+details summary:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .astro-float,
+  .heart-beat,
+  .breath-orb {
+    animation: none;
+  }
+
+  .btn-tactile,
+  .nav-btn,
+  .bottom-nav-btn,
+  .action-chip,
+  .mood-btn,
+  .mission-btn,
+  .system-group,
+  .diagnosis-card,
+  .traffic-badge,
+  .floating-hint,
+  .toast,
+  .mini-bar-fill {
+    transition: none;
+  }
+}

@@ -21,13 +21,18 @@ interface MonitorChartCardProps {
   onNavigateTab: (tab: TabKey) => void;
 }
 
-function buildPolyPoints(values: Array<{ idx: number; val: number }>, total: number, minV: number, maxV: number): string {
+function pointCoords(idx: number, val: number, total: number, minV: number, maxV: number): { x: number; y: number } {
   const span = Math.max(1, maxV - minV);
+  const x = 30 + (idx / Math.max(1, total - 1)) * 272;
+  const clamped = Math.max(minV, Math.min(maxV, val));
+  const y = 110 - ((clamped - minV) / span) * 90;
+  return { x, y };
+}
+
+function buildPolyPoints(values: Array<{ idx: number; val: number }>, total: number, minV: number, maxV: number): string {
   return values
     .map(({ idx, val }) => {
-      const x = 18 + (idx / Math.max(1, total - 1)) * 284;
-      const clamped = Math.max(minV, Math.min(maxV, val));
-      const y = 114 - ((clamped - minV) / span) * 92;
+      const { x, y } = pointCoords(idx, val, total, minV, maxV);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(' ');
@@ -58,7 +63,7 @@ export function MonitorChartCard({
     <div className="card">
       <div className="group-head" style={{ marginBottom: 10 }}>
         <h2 className="card-title" style={{ marginBottom: 0 }}>
-          📈 Monitor en Vivo
+          Evolución
         </h2>
         <span className="val-pill">
           {activeNasaReplay ? `NASA ${activeNasaReplay.subjectId}` : `${totalObsCount} tomas reales`}
@@ -69,6 +74,7 @@ export function MonitorChartCard({
         <button
           type="button"
           className={`chart-tab${chartMode === 'score' ? ' active' : ''}`}
+          aria-pressed={chartMode === 'score'}
           onClick={() => setChartMode('score')}
         >
           Equilibrio
@@ -76,6 +82,7 @@ export function MonitorChartCard({
         <button
           type="button"
           className={`chart-tab${chartMode === 'vitals' ? ' active' : ''}`}
+          aria-pressed={chartMode === 'vitals'}
           onClick={() => setChartMode('vitals')}
         >
           Pulso / Azúcar
@@ -85,70 +92,166 @@ export function MonitorChartCard({
       <div className="chart-box">
         {chartMode === 'score' ? (
           scorePts.length >= 2 ? (
-            <svg id="liveChart" width="100%" height="145" viewBox="0 0 320 140" role="img" aria-label="Serie real de equilibrio">
-              <line x1="16" y1="22" x2="304" y2="22" stroke="#D8D2C5" strokeDasharray="4 4" />
-              <line x1="16" y1="68" x2="304" y2="68" stroke="#D8D2C5" strokeDasharray="4 4" />
-              <line x1="16" y1="114" x2="304" y2="114" stroke="#D8D2C5" strokeDasharray="4 4" />
-              <polyline
-                fill="none"
-                stroke="var(--periwinkle)"
-                strokeWidth="3.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                points={buildPolyPoints(scorePts, rawPoints.length, 0, 100)}
-              />
-              {scorePts.map((pt) => {
-                const x = 18 + (pt.idx / Math.max(1, rawPoints.length - 1)) * 284;
-                const y = 114 - (Math.max(0, Math.min(100, pt.val)) / 100) * 92;
-                return (
-                  <circle
-                    key={`${pt.idx}-${pt.label}`}
-                    cx={x}
-                    cy={y}
-                    r="5"
-                    fill={colorForLevel(statusToLevel(pt.status))}
-                    stroke="#1C1917"
-                    strokeWidth="2"
-                  />
-                );
-              })}
-              <text x="16" y="133" fontSize="10" fontWeight="700" fill="#635D56">
-                {scorePts[0].label} ({scorePts[0].val})
-              </text>
-              <text x="304" y="133" textAnchor="end" fontSize="10" fontWeight="700" fill="#1C1917">
-                {scorePts[scorePts.length - 1].label} ({scorePts[scorePts.length - 1].val})
-              </text>
-            </svg>
+            <>
+              <svg id="liveChart" width="100%" height="132" viewBox="0 0 320 124" role="img" aria-label="Serie real de equilibrio">
+                <text x="6" y="24" fontSize="9.5" fontWeight="700" fill="#635D56">100</text>
+                <text x="10" y="69" fontSize="9.5" fontWeight="700" fill="#635D56">50</text>
+                <text x="14" y="113" fontSize="9.5" fontWeight="700" fill="#635D56">0</text>
+                <line x1="28" y1="20" x2="304" y2="20" stroke="#D8D2C5" strokeDasharray="4 4" />
+                <line x1="28" y1="65" x2="304" y2="65" stroke="#D8D2C5" strokeDasharray="4 4" />
+                <line x1="28" y1="110" x2="304" y2="110" stroke="#D8D2C5" strokeDasharray="4 4" />
+                <polyline
+                  fill="none"
+                  stroke="var(--periwinkle-dark)"
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  points={buildPolyPoints(scorePts, rawPoints.length, 0, 100)}
+                />
+                {scorePts.map((pt) => {
+                  const { x, y } = pointCoords(pt.idx, pt.val, rawPoints.length, 0, 100);
+                  return (
+                    <circle
+                      key={`${pt.idx}-${pt.label}`}
+                      cx={x}
+                      cy={y}
+                      r="5"
+                      fill={colorForLevel(statusToLevel(pt.status))}
+                      stroke="#1C1917"
+                      strokeWidth="2"
+                    />
+                  );
+                })}
+              </svg>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  flexWrap: 'wrap',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  marginTop: 4,
+                }}
+              >
+                <span style={{ color: 'var(--ink-muted)' }}>
+                  {scorePts[0].label} ({scorePts[0].val})
+                </span>
+                <span style={{ color: 'var(--ink)' }}>
+                  {scorePts[scorePts.length - 1].label} ({scorePts[scorePts.length - 1].val})
+                </span>
+              </div>
+            </>
           ) : (
             <div style={{ textAlign: 'center', padding: '18px 10px' }}>
               <p style={{ fontSize: '0.82rem', fontWeight: 800, marginBottom: 6 }}>
-                Sin serie histórica suficiente — {totalObsCount} observacion(es) reales guardadas
+                Aún no hay suficientes mediciones
               </p>
               <p style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', marginBottom: 10 }}>
-                Sin curvas simuladas ni datos inventados: guarda al menos 2 tomas o carga un sujeto real NASA.
+                {activeNasaReplay ? 'Este caso necesita dos mediciones con índice para mostrar la evolución.' : 'Guarda dos mediciones para ver tu evolución.'}
               </p>
-              <button type="button" className="btn-tactile" onClick={() => onNavigateTab('controls')}>
-                🎛️ Registrar toma real
-              </button>
+              {!activeNasaReplay && <button type="button" className="btn-tactile" onClick={() => onNavigateTab('controls')}>
+                Registrar medición
+              </button>}
             </div>
           )
         ) : hrPts.length >= 2 || glucPts.length >= 2 ? (
-          <svg id="liveChart" width="100%" height="145" viewBox="0 0 320 140" role="img" aria-label="Serie real pulso y glucosa">
-            <line x1="16" y1="22" x2="304" y2="22" stroke="#D8D2C5" strokeDasharray="4 4" />
-            <line x1="16" y1="114" x2="304" y2="114" stroke="#D8D2C5" strokeDasharray="4 4" />
-            {hrPts.length >= 2 ? (
-              <polyline fill="none" stroke="var(--tangerine)" strokeWidth="3" strokeLinecap="round" points={buildPolyPoints(hrPts, rawPoints.length, 40, 160)} />
+          <>
+            <svg id="liveChart" width="100%" height="132" viewBox="0 0 320 124" role="img" aria-label="Serie real pulso y glucosa">
+              <text x="6" y="24" fontSize="9" fontWeight="700" fill="#635D56">Máx</text>
+              <text x="6" y="113" fontSize="9" fontWeight="700" fill="#635D56">Mín</text>
+              <line x1="28" y1="20" x2="304" y2="20" stroke="#D8D2C5" strokeDasharray="4 4" />
+              <line x1="28" y1="65" x2="304" y2="65" stroke="#D8D2C5" strokeDasharray="4 4" />
+              <line x1="28" y1="110" x2="304" y2="110" stroke="#D8D2C5" strokeDasharray="4 4" />
+              {hrPts.length >= 2 ? (
+                <polyline
+                  fill="none"
+                  stroke="var(--tangerine-dark)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  points={buildPolyPoints(hrPts, rawPoints.length, 40, 160)}
+                />
+              ) : null}
+              {hrPts.map((pt) => {
+                const { x, y } = pointCoords(pt.idx, pt.val, rawPoints.length, 40, 160);
+                return (
+                  <circle
+                    key={`hr-${pt.idx}-${pt.label}`}
+                    cx={x}
+                    cy={y}
+                    r="4.5"
+                    fill="var(--tangerine)"
+                    stroke="#1C1917"
+                    strokeWidth="1.8"
+                  />
+                );
+              })}
+              {glucPts.length >= 2 ? (
+                <polyline
+                  fill="none"
+                  stroke="var(--periwinkle-dark)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  points={buildPolyPoints(glucPts, rawPoints.length, 55, 200)}
+                />
+              ) : null}
+              {glucPts.map((pt) => {
+                const { x, y } = pointCoords(pt.idx, pt.val, rawPoints.length, 55, 200);
+                return (
+                  <circle
+                    key={`gluc-${pt.idx}-${pt.label}`}
+                    cx={x}
+                    cy={y}
+                    r="4.5"
+                    fill="var(--periwinkle)"
+                    stroke="#1C1917"
+                    strokeWidth="1.8"
+                  />
+                );
+              })}
+            </svg>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: 10,
+                flexWrap: 'wrap',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                marginTop: 4,
+              }}
+            >
+              <span style={{ color: hrPts.length > 0 ? 'var(--tangerine-dark)' : 'var(--ink-muted)' }}>
+                {hrPts.length > 0 ? `● Pulso 40–160 bpm (${hrPts.length} pts)` : 'Pulso: Sin datos'}
+              </span>
+              <span style={{ color: glucPts.length > 0 ? 'var(--periwinkle-dark)' : 'var(--ink-muted)' }}>
+                {glucPts.length > 0 ? `● Glucosa 55–200 mg/dL (${glucPts.length} pts)` : 'Glucosa: Sin datos'}
+              </span>
+            </div>
+            {rawPoints.length >= 2 ? (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  flexWrap: 'wrap',
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  color: 'var(--ink-muted)',
+                  marginTop: 4,
+                }}
+              >
+                <span>{rawPoints[0].label}</span>
+                <span>{rawPoints[rawPoints.length - 1].label}</span>
+              </div>
             ) : null}
-            {glucPts.length >= 2 ? (
-              <polyline fill="none" stroke="var(--periwinkle)" strokeWidth="3" strokeLinecap="round" points={buildPolyPoints(glucPts, rawPoints.length, 55, 200)} />
-            ) : null}
-            <text x="16" y="133" fontSize="10" fontWeight="700" fill="var(--tangerine)">● FC ({hrPts.length} pts)</text>
-            <text x="304" y="133" textAnchor="end" fontSize="10" fontWeight="700" fill="var(--periwinkle)">● Glucosa ({glucPts.length} pts)</text>
-          </svg>
+          </>
         ) : (
           <div style={{ textAlign: 'center', padding: '18px 10px' }}>
             <p style={{ fontSize: '0.82rem', fontWeight: 800 }}>
-              Se requieren &gt;= 2 lecturas reales de FC o glucosa ({hrPts.length} FC · {glucPts.length} gluc)
+              Necesitas dos mediciones de pulso o glucosa.
             </p>
           </div>
         )}

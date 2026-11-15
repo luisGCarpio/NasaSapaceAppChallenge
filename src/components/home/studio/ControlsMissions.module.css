@@ -1,0 +1,71 @@
+.moodIcon {
+  width: 24px;
+  height: 24px;
+  flex: none;
+}
+
+.missionTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.missionTitle svg {
+  flex: none;
+}
+
+.reportDetails {
+  margin: 0 0 14px;
+}
+
+.reportDetails summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 10px 0;
+}
+
+.reportDetails pre {
+  overflow-wrap: anywhere;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.caption {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  margin-top: 10px;
+  line-height: 1.4;
+}
+
+.controls :global(.control-label) {
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+
+.controls :global(.mood-btn) {
+  min-height: 56px;
+  font-size: 0.78rem;
+}
+
+.controls :global(.measure-toggle),
+.controls :global(.chip-toggle),
+.controls :global(.context-select) {
+  min-height: 40px;
+  font-size: 0.875rem;
+}
+
+.missions :global(.mission-btn) {
+  min-height: 54px;
+}
+
+@media (max-width: 480px) {
+  .controls :global(.mood-grid) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .controls :global(.control-label) > div {
+    flex-wrap: wrap;
+  }
+}

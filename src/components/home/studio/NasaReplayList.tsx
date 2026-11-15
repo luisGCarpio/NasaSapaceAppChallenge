@@ -6,6 +6,7 @@ import type {
   NasaTimelinePoint,
 } from '@/server/repositories/nasa-datasets-repo';
 import { bgForLevel, statusToLevel } from './studio-types';
+import { AresIcon } from '@/components/ui/Icons';
 
 interface NasaReplayListProps {
   subjects: NasaSubjectSummary[];
@@ -26,23 +27,22 @@ export function NasaReplayList({
   subjects,
   selectedSubject,
   timeline,
-  v2Pts,
-  v3Pts,
   activeObservationId,
   onChangeSubject,
   onLoadPointToAstronaut,
 }: NasaReplayListProps) {
   return (
-    <div className="card">
-      <div className="group-head" style={{ marginBottom: 10 }}>
-        <h3 className="card-title" style={{ marginBottom: 0 }}>
-          🧬 Replay Longitudinal por Sujeto ({subjects.length} sujetos)
-        </h3>
-        <span className="val-pill">v2: {v2Pts} · v3: {v3Pts} pts</span>
+    <div className="nasa-replay">
+      <div className="nasa-replay-heading">
+        <div>
+          <h2>Explorar casos NASA</h2>
+          <p>Elige un sujeto y carga una medición.</p>
+        </div>
+        <span>{subjects.length} sujetos</span>
       </div>
 
-      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 800, marginBottom: 10 }}>
-        Seleccionar sujeto oficial NASA:
+      <label className="nasa-subject-label">
+        Sujeto
         <select
           className="context-select"
           value={selectedSubject}
@@ -50,7 +50,7 @@ export function NasaReplayList({
         >
           {subjects.map((subj) => (
             <option key={subj.subjectId} value={subj.subjectId}>
-              {subj.subjectId} · {subj.cohortGroup} ({subj.vitalsCount} vitals · {subj.studyIds.join(', ')})
+              {subj.subjectId} · {subj.cohortGroup}
             </option>
           ))}
         </select>
@@ -89,17 +89,17 @@ export function NasaReplayList({
               <div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span className="meta-pill" style={{ background: bgForLevel(lvl) }}>
-                    {pt.evaluation.overallStatus}
+                    {pt.evaluation.overallLabel}
                   </span>
-                  <strong style={{ fontSize: '0.8rem' }}>
+                  <strong style={{ fontSize: '0.95rem' }}>
                     {pt.observation.relativeLabel} · {pt.observation.studyId}
                   </strong>
-                  <span className="mono" style={{ fontSize: '0.7rem', color: 'var(--ink-muted)' }}>
+                  <span className="mono" style={{ fontSize: '0.82rem', color: 'var(--ink-muted)' }}>
                     {pt.evaluation.coverage.presentCount}/7
                   </span>
                 </div>
-                <div style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', marginTop: 3 }}>
-                  {vitStr || 'Sin signos numéricos'} · {pt.evaluation.crossConclusion.title}
+                <div style={{ fontSize: '0.88rem', color: 'var(--ink-muted)', marginTop: 3 }}>
+                  {vitStr || 'Sin signos numéricos'}
                 </div>
               </div>
               <button
@@ -107,7 +107,7 @@ export function NasaReplayList({
                 className="btn-tactile"
                 onClick={() => onLoadPointToAstronaut(pt, buildPrior(), timeline)}
               >
-                🚀 Cargar en Astronauta
+                <AresIcon name="arrow-right" /> Ver caso
               </button>
             </div>
           );

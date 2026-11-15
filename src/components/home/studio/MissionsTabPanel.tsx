@@ -1,6 +1,8 @@
 'use client';
 
 import type { HealthEvaluation } from '@/domain/health';
+import { AresIcon, type AresIconName } from '@/components/ui/Icons';
+import styles from './ControlsMissions.module.css';
 import { XP_PER_LEVEL, type MissionItem } from '@/domain/missions/mission-catalog';
 import type { PublicUserState } from '@/server/storage/types';
 
@@ -17,11 +19,11 @@ interface MissionsTabPanelProps {
   onPingEarth: () => void;
 }
 
-const MISSION_ICON: Record<string, string> = {
-  droplet: '💧',
-  activity: '🏃',
-  moon: '😴',
-  wind: '🧘',
+const MISSION_ICON: Record<string, AresIconName> = {
+  droplet: 'droplet',
+  activity: 'activity',
+  moon: 'moon',
+  wind: 'wind',
 };
 
 export function MissionsTabPanel({
@@ -43,34 +45,28 @@ export function MissionsTabPanel({
   const streak = gamification?.streak ?? 0;
 
   return (
-    <section className="right-stack">
+    <section className={`right-stack missions-layout ${styles.missions}`}>
       <div className="card">
         <div className="group-head" style={{ marginBottom: 10 }}>
           <h2 className="card-title" style={{ marginBottom: 0 }}>
-            🛡️ Misiones de Hoy
+            Misiones de hoy
           </h2>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
             <span className="val-pill">Nv. {level} · {xpProgress}/{XP_PER_LEVEL} XP</span>
-            <span className="val-pill">🔥 Racha {streak}d</span>
+            <span className="val-pill">Racha {streak} días</span>
             {userState ? (
-              <button type="button" className="btn-tactile" style={{ padding: '4px 10px', fontSize: '0.72rem' }} onClick={onResetMissions}>
+              <button type="button" className="btn-tactile"  onClick={onResetMissions}>
                 Reiniciar día
               </button>
             ) : null}
           </div>
         </div>
 
-        <p style={{ fontSize: '0.76rem', color: 'var(--ink-muted)', marginBottom: 10, fontWeight: 600 }}>
-          {userState
-            ? 'Cada misión suma XP real (máx. 1 vez por día y misión). Si existe alerta clínica, ARES bloquea el ejercicio intenso.'
-            : 'Vista previa segura: inicia sesión en Controles para guardar tus XP y racha diarios en tu bitácora.'}
-        </p>
-
         <div className="missions-list">
           {missions.map((mission) => {
             const isDone = mission.completed || completedLocalIds.includes(mission.id);
             const isLocked = Boolean(mission.blockedByRestriction);
-            const icon = MISSION_ICON[mission.iconKey] ?? '✅';
+            const icon = MISSION_ICON[mission.iconKey] ?? 'check';
 
             return (
               <button
@@ -88,20 +84,20 @@ export function MissionsTabPanel({
                 }}
               >
                 <div className="mission-top">
-                  <span>
-                    {icon} {mission.title}
+                  <span className={styles.missionTitle}>
+                    <AresIcon name={icon} size={21} /> {mission.title}
                   </span>
                   <span className="mission-xp">
-                    {isLocked ? 'BLOQUEADA' : isDone ? '✓ Lista' : `+${mission.xpReward} XP`}
+                    {isLocked ? 'Pausada' : isDone ? 'Lista' : `+${mission.xpReward} XP`}
                   </span>
                 </div>
                 {isLocked && mission.restrictionReason ? (
-                  <small style={{ color: '#991B1B', fontWeight: 700, fontSize: '0.72rem' }}>
-                    ⚠️ {mission.restrictionReason}
+                  <small style={{ color: '#991B1B', fontWeight: 700, fontSize: '0.875rem' }}>
+                    {mission.restrictionReason}
                   </small>
                 ) : mission.recommendedPriority ? (
-                  <small style={{ color: 'var(--periwinkle)', fontWeight: 800, fontSize: '0.72rem' }}>
-                    ★ Prioritaria según tu evaluación clínica actual
+                  <small style={{ color: 'var(--periwinkle-dark)', fontWeight: 800, fontSize: '0.875rem' }}>
+                    Recomendada
                   </small>
                 ) : null}
               </button>
@@ -113,11 +109,13 @@ export function MissionsTabPanel({
       <div className="card">
         <div className="group-head" style={{ marginBottom: 10 }}>
           <h2 className="card-title" style={{ marginBottom: 0 }}>
-            📡 Comunicación a Control en Tierra
+            Comunicación
           </h2>
           <span className="val-pill">{evaluation.overallStatus}</span>
         </div>
 
+        <details className={styles.reportDetails}>
+          <summary>Ver informe</summary>
         <pre
           style={{
             background: 'var(--surface-alt)',
@@ -134,6 +132,8 @@ export function MissionsTabPanel({
           {evaluation.commsMessage}
         </pre>
 
+        </details>
+
         <button
           type="button"
           id="btn-earth"
@@ -144,19 +144,17 @@ export function MissionsTabPanel({
           {commsSending
             ? 'Registrando aviso...'
             : commsSentAt
-              ? '✓ Aviso copiado y registrado en bitácora'
-              : '📡 Avisar estado a Tierra (Copiar y registrar)'}
+              ? 'Informe registrado'
+              : 'Copiar y registrar informe'}
         </button>
 
-        <p style={{ fontSize: '0.7rem', color: 'var(--ink-muted)', marginTop: 8, fontWeight: 600 }}>
-          Prototipo honesto: copia el parte estructurado al portapapeles y, si estás autenticado, lo guarda en tu historial local sin simular enlace NASA en vivo.
-        </p>
+        <p className={styles.caption}>Se copia al portapapeles y se guarda en este navegador.</p>
 
         {userState && userState.commsLog.length > 0 ? (
           <div style={{ marginTop: 12 }}>
-            <p style={{ fontSize: '0.73rem', fontWeight: 800, marginBottom: 6 }}>Últimos avisos registrados:</p>
+            <p className={styles.caption}>Últimos informes</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {userState.commsLog.slice(0, 4).map((entry) => (
+              {[...userState.commsLog].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 4).map((entry) => (
                 <div key={entry.id} className="trace-box" style={{ marginTop: 0 }}>
                   <span className="mono">{entry.timestamp.slice(0, 16).replace('T', ' ')}</span> ·{' '}
                   <strong>{entry.overallStatus}</strong> ({entry.readinessScore ?? 'N/D'}/100) ·{' '}

@@ -1,18 +1,24 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { HealthEvaluation, PartialVitalValues, ScenarioId, VitalValues } from '@/domain/health';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import { SCENARIOS_META, type HealthEvaluation, type PartialVitalValues, type ScenarioId, type VitalValues } from '@/domain/health';
 import type { NasaStudyId } from '@/domain/nasa/nasa-types';
 import {
-  ApiError,
   apiCompleteMission,
   apiGetState,
-  apiLogin,
-  apiLogout,
-  apiRegister,
   apiResetMissions,
   apiRunScenario,
 } from '@/lib/client-api';
+import type { NasaTimelinePoint } from '@/server/repositories/nasa-datasets-repo';
 import type { PublicUserState } from '@/server/storage/types';
 
 export interface ActiveSimulation {
@@ -37,6 +43,7 @@ interface AresContextValue {
   authError: string | null;
   activeSimulation: ActiveSimulation | null;
   activeNasaReplay: ActiveNasaReplay | null;
+  nasaTimeline: NasaTimelinePoint[] | null;
   simulatorOpen: boolean;
   commsOpen: boolean;
   commsDraftMessage: string;
@@ -45,10 +52,11 @@ interface AresContextValue {
   register: (payload: { name: string; username: string; email?: string; role?: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   applyUpdatedState: (next: PublicUserState) => void;
-  runSimulation: (id: ScenarioId) => Promise<void>;
+  runSimulation: (id: ScenarioId) => Promise<boolean>;
   clearSimulation: () => void;
   activateNasaReplay: (replay: ActiveNasaReplay) => void;
   clearNasaReplay: () => void;
+  setNasaTimeline: (timeline: NasaTimelinePoint[] | null) => void;
   setSimulatorOpen: (open: boolean) => void;
   openCommsWithMessage: (message: string) => void;
   closeComms: () => void;
@@ -60,13 +68,20 @@ const AresContext = createContext<AresContextValue | null>(null);
 
 export function AresProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PublicUserState | null>(null);
+  const stateRef = useRef<PublicUserState | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [activeSimulation, setActiveSimulation] = useState<ActiveSimulation | null>(null);
+  const simulationRequest = useRef(0);
   const [activeNasaReplay, setActiveNasaReplay] = useState<ActiveNasaReplay | null>(null);
+  const [nasaTimeline, setNasaTimeline] = useState<NasaTimelinePoint[] | null>(null);
   const [simulatorOpen, setSimulatorOpen] = useState(false);
   const [commsOpen, setCommsOpen] = useState(false);
   const [commsDraftMessage, setCommsDraftMessage] = useState('');
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const refreshState = useCallback(async () => {
     setLoading(true);
@@ -75,11 +90,7 @@ export function AresProvider({ children }: { children: ReactNode }) {
       setState(next);
       setAuthError(null);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        setState(null);
-      } else {
-        setAuthError(err instanceof Error ? err.message : 'No se pudo cargar el estado.');
-      }
+      setAuthError(err instanceof Error ? err.message : 'No se pudo cargar la bitácora local.');
     } finally {
       setLoading(false);
     }
@@ -89,55 +100,64 @@ export function AresProvider({ children }: { children: ReactNode }) {
     void refreshState();
   }, [refreshState]);
 
-  const login = useCallback(async (identifier: string, password: string) => {
-    setAuthError(null);
-    const result = await apiLogin({ identifier, password });
+  const clearSimulation = useCallback(() => {
+    simulationRequest.current++;
     setActiveSimulation(null);
-    setActiveNasaReplay(null);
-    setState(result.state);
   }, []);
 
-  const register = useCallback(
-    async (payload: { name: string; username: string; email?: string; role?: string; password: string }) => {
-      setAuthError(null);
-      const result = await apiRegister(payload);
-      setActiveSimulation(null);
+  const login = useCallback(
+    async (_identifier?: string, _password?: string) => {
+      clearSimulation();
       setActiveNasaReplay(null);
-      setState(result.state);
+      setNasaTimeline(null);
+      await refreshState();
     },
-    []
+    [clearSimulation, refreshState]
+  );
+
+  const register = useCallback(
+    async (_payload?: { name: string; username: string; email?: string; role?: string; password: string }) => {
+      clearSimulation();
+      setActiveNasaReplay(null);
+      setNasaTimeline(null);
+      await refreshState();
+    },
+    [clearSimulation, refreshState]
   );
 
   const logout = useCallback(async () => {
-    await apiLogout();
-    setActiveSimulation(null);
+    clearSimulation();
     setActiveNasaReplay(null);
+    setNasaTimeline(null);
     setSimulatorOpen(false);
     setCommsOpen(false);
-    setState(null);
-  }, []);
+    await refreshState();
+  }, [clearSimulation, refreshState]);
 
-  const runSimulation = useCallback(
-    async (id: ScenarioId) => {
+  const runSimulation = useCallback(async (id: ScenarioId) => {
+    const request = ++simulationRequest.current;
+    try {
       const result = await apiRunScenario(id);
-      const label = state?.scenarios[id]?.label ?? `Escenario ${id}`;
+      if (request !== simulationRequest.current) return false;
+      const label = stateRef.current?.scenarios[id]?.label ?? SCENARIOS_META[id]?.label ?? `Escenario ${id}`;
       setActiveNasaReplay(null);
+      setNasaTimeline(null);
       setActiveSimulation({ id, label, vitals: result.vitals, evaluation: result.evaluation });
-    },
-    [state]
-  );
-
-  const clearSimulation = useCallback(() => {
-    setActiveSimulation(null);
+      return true;
+    } catch (error) {
+      if (request !== simulationRequest.current) return false;
+      throw error;
+    }
   }, []);
 
   const activateNasaReplay = useCallback((replay: ActiveNasaReplay) => {
-    setActiveSimulation(null);
+    clearSimulation();
     setActiveNasaReplay(replay);
-  }, []);
+  }, [clearSimulation]);
 
   const clearNasaReplay = useCallback(() => {
     setActiveNasaReplay(null);
+    setNasaTimeline(null);
   }, []);
 
   const openCommsWithMessage = useCallback((message: string) => {
@@ -160,36 +180,59 @@ export function AresProvider({ children }: { children: ReactNode }) {
     setState(res.state);
   }, []);
 
-  return (
-    <AresContext.Provider
-      value={{
-        state,
-        loading,
-        authError,
-        activeSimulation,
-        activeNasaReplay,
-        simulatorOpen,
-        commsOpen,
-        commsDraftMessage,
-        refreshState,
-        login,
-        register,
-        logout,
-        applyUpdatedState: setState,
-        runSimulation,
-        clearSimulation,
-        activateNasaReplay,
-        clearNasaReplay,
-        setSimulatorOpen,
-        openCommsWithMessage,
-        closeComms,
-        completeMission,
-        resetMissions,
-      }}
-    >
-      {children}
-    </AresContext.Provider>
+  const value = useMemo<AresContextValue>(
+    () => ({
+      state,
+      loading,
+      authError,
+      activeSimulation,
+      activeNasaReplay,
+      nasaTimeline,
+      simulatorOpen,
+      commsOpen,
+      commsDraftMessage,
+      refreshState,
+      login,
+      register,
+      logout,
+      applyUpdatedState: setState,
+      runSimulation,
+      clearSimulation,
+      activateNasaReplay,
+      clearNasaReplay,
+      setNasaTimeline,
+      setSimulatorOpen,
+      openCommsWithMessage,
+      closeComms,
+      completeMission,
+      resetMissions,
+    }),
+    [
+      state,
+      loading,
+      authError,
+      activeSimulation,
+      activeNasaReplay,
+      nasaTimeline,
+      simulatorOpen,
+      commsOpen,
+      commsDraftMessage,
+      refreshState,
+      login,
+      register,
+      logout,
+      runSimulation,
+      clearSimulation,
+      activateNasaReplay,
+      clearNasaReplay,
+      openCommsWithMessage,
+      closeComms,
+      completeMission,
+      resetMissions,
+    ]
   );
+
+  return <AresContext.Provider value={value}>{children}</AresContext.Provider>;
 }
 
 export function useAres(): AresContextValue {

@@ -1,10 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { AresIcon } from '@/components/ui/Icons';
 import type { ObservationContext } from '@/domain/nasa/nasa-types';
 import type { PublicUserState } from '@/server/storage/types';
-
-const SYMPTOMS = ['Mareo', 'Palpitaciones', 'Cefalea', 'Fatiga'] as const;
+import { COMMON_SYMPTOMS } from '@/domain/health/context-specs';
 
 interface ContextAndSaveCardProps {
   context: ObservationContext;
@@ -15,8 +14,6 @@ interface ContextAndSaveCardProps {
   isSimulationOrReplay: boolean;
   onChangeContext: <K extends keyof ObservationContext>(key: K, val: ObservationContext[K]) => void;
   onSaveCheckin: () => void;
-  onQuickCrewLogin: (username: 'elena' | 'marco', password: string) => Promise<void>;
-  onCustomLogin: (identifier: string, password: string) => Promise<void>;
 }
 
 export function ContextAndSaveCard({
@@ -28,14 +25,7 @@ export function ContextAndSaveCard({
   isSimulationOrReplay,
   onChangeContext,
   onSaveCheckin,
-  onQuickCrewLogin,
-  onCustomLogin,
 }: ContextAndSaveCardProps) {
-  const [showAuthForm, setShowAuthForm] = useState(false);
-  const [idInput, setIdInput] = useState('');
-  const [passInput, setPassInput] = useState('');
-  const [authBusy, setAuthBusy] = useState(false);
-
   const toggleSymptom = (sym: string) => {
     const next = context.symptoms.includes(sym)
       ? context.symptoms.filter((s) => s !== sym)
@@ -43,28 +33,17 @@ export function ContextAndSaveCard({
     onChangeContext('symptoms', next);
   };
 
-  async function handleCustomSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setAuthBusy(true);
-    try {
-      await onCustomLogin(idInput, passInput);
-      setShowAuthForm(false);
-    } finally {
-      setAuthBusy(false);
-    }
-  }
-
   return (
     <div className="system-group" id="group-context">
       <div className="group-head">
         <div className="group-head-left">
-          <span>🧭 4. Contexto Clínico y Guardado Real</span>
+          <AresIcon name="sliders" size={20} /><span>Contexto de la medición</span>
         </div>
         <span className="val-pill">{canSaveCount}/7 medidos</span>
       </div>
 
       <div className="context-grid">
-        <label style={{ fontSize: '0.73rem', fontWeight: 700 }}>
+        <label style={{ fontSize: '0.9rem', fontWeight: 700 }}>
           Actividad / Esfuerzo
           <select
             className="context-select"
@@ -78,7 +57,7 @@ export function ContextAndSaveCard({
           </select>
         </label>
 
-        <label style={{ fontSize: '0.73rem', fontWeight: 700 }}>
+        <label style={{ fontSize: '0.9rem', fontWeight: 700 }}>
           Postura de toma
           <select
             className="context-select"
@@ -92,7 +71,7 @@ export function ContextAndSaveCard({
           </select>
         </label>
 
-        <label style={{ fontSize: '0.73rem', fontWeight: 700 }}>
+        <label style={{ fontSize: '0.9rem', fontWeight: 700 }}>
           Ayuno / Glucemia
           <select
             className="context-select"
@@ -106,7 +85,7 @@ export function ContextAndSaveCard({
           </select>
         </label>
 
-        <label style={{ fontSize: '0.73rem', fontWeight: 700 }}>
+        <label style={{ fontSize: '0.9rem', fontWeight: 700 }}>
           Método temperatura
           <select
             className="context-select"
@@ -122,26 +101,27 @@ export function ContextAndSaveCard({
       </div>
 
       <div style={{ marginBottom: 10 }}>
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: '0.76rem', fontWeight: 800, cursor: 'pointer' }}>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer' }}>
           <input
             type="checkbox"
             checked={context.confirmedRepeated}
             onChange={(e) => onChangeContext('confirmedRepeated', e.target.checked)}
           />
-          Segunda lectura confirmatoria realizada (5–15 min tras reposo)
+          Lectura repetida para confirmar
         </label>
       </div>
 
       <div style={{ marginBottom: 14 }}>
-        <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--ink-muted)', marginBottom: 6 }}>
-          Síntomas presentes:
+        <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--ink-muted)', marginBottom: 6 }}>
+          Síntomas
         </p>
         <div className="chip-row">
-          {SYMPTOMS.map((sym) => (
+          {[...new Set([...COMMON_SYMPTOMS, ...context.symptoms])].map((sym) => (
             <button
               key={sym}
               type="button"
               className={`chip-toggle${context.symptoms.includes(sym) ? ' active' : ''}`}
+              aria-pressed={context.symptoms.includes(sym)}
               onClick={() => toggleSymptom(sym)}
             >
               {sym}
@@ -155,59 +135,20 @@ export function ContextAndSaveCard({
           <button
             type="button"
             className="btn-tactile"
-            style={{ background: 'var(--periwinkle)', color: '#FFF' }}
+            style={{ background: 'var(--periwinkle-dark)', color: '#FFF' }}
             disabled={saving || canSaveCount === 0 || isSimulationOrReplay}
             onClick={onSaveCheckin}
           >
-            {saving ? 'Guardando...' : '💾 Guardar toma real en Bitácora'}
+            <AresIcon name="clipboard" size={18} /> {saving ? 'Guardando...' : 'Guardar medición'}
           </button>
           {isSimulationOrReplay ? (
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--ink-muted)' }}>
-              En modo simulación/replay; ajusta un control para guardar una toma real.
+            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--ink-muted)' }}>
+              Al editar un control, vuelves a tu medición personal con ese cambio.
             </span>
           ) : null}
         </div>
       ) : (
-        <div style={{ background: 'var(--surface-alt)', border: '2px solid var(--ink)', borderRadius: 12, padding: 10 }}>
-          <p style={{ fontSize: '0.75rem', fontWeight: 800, marginBottom: 8 }}>
-            Inicia sesión para guardar esta toma en la bitácora y sumar XP real:
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            <button type="button" className="btn-tactile" onClick={() => void onQuickCrewLogin('elena', '123')}>
-              👩‍🚀 Entrar: Cmdr. Elena Vance
-            </button>
-            <button type="button" className="btn-tactile" onClick={() => void onQuickCrewLogin('marco', '123')}>
-              👨‍🚀 Entrar: Esp. Marco Silva
-            </button>
-            <button type="button" className="btn-tactile" onClick={() => setShowAuthForm((v) => !v)}>
-              🔐 Otro usuario
-            </button>
-          </div>
-          {showAuthForm ? (
-            <form onSubmit={(e) => void handleCustomSubmit(e)} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-              <input
-                className="context-select"
-                style={{ width: 150 }}
-                placeholder="Usuario (ej. elena)"
-                value={idInput}
-                onChange={(e) => setIdInput(e.target.value)}
-                required
-              />
-              <input
-                className="context-select"
-                style={{ width: 140 }}
-                type="password"
-                placeholder="Contraseña"
-                value={passInput}
-                onChange={(e) => setPassInput(e.target.value)}
-                required
-              />
-              <button type="submit" className="btn-tactile" disabled={authBusy}>
-                {authBusy ? 'Entrando...' : 'Entrar'}
-              </button>
-            </form>
-          ) : null}
-        </div>
+        <p>Cargando bitácora local...</p>
       )}
 
       {saveMessage ? (

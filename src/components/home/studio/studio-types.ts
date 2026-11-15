@@ -5,6 +5,12 @@ import {
   type PartialVitalValues,
   type SystemId,
 } from '@/domain/health';
+/** Apply only the symptom changes made against a displayed simulation to the personal context. */
+export function applySymptomChanges(personal: string[], displayed: string[], edited: string[]): string[] {
+  const removed = new Set(displayed.filter((symptom) => !edited.includes(symptom)));
+  const added = edited.filter((symptom) => !displayed.includes(symptom));
+  return [...new Set([...personal.filter((symptom) => !removed.has(symptom)), ...added])];
+}
 
 export type TabKey = 'astro' | 'controls' | 'monitor' | 'missions' | 'nasa';
 export type VitalToggleKey = 'sleep_hours' | 'mood' | 'heart_rate' | 'bp' | 'glucose' | 'temperature';
@@ -18,6 +24,22 @@ export interface StudioDraft {
   glucose: number;
   temperature: number;
   measured: Record<VitalToggleKey, boolean>;
+}
+
+export function setDraftKeysMeasured(
+  draft: StudioDraft,
+  keys: readonly VitalToggleKey[],
+  measured: boolean,
+): StudioDraft {
+  const nextMeasured = { ...draft.measured };
+  for (const key of keys) {
+    nextMeasured[key] = measured;
+  }
+  return { ...draft, measured: nextMeasured };
+}
+
+export function setDraftMeasured(draft: StudioDraft, key: VitalToggleKey, measured: boolean): StudioDraft {
+  return setDraftKeysMeasured(draft, [key], measured);
 }
 
 export const MOOD_DISPLAY = ['Límite', 'Tenso', 'Cansado', 'Bien', 'Genial'] as const;

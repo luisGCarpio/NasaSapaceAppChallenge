@@ -29,8 +29,8 @@ export function MonitorTabPanel({
   onNavigateTab,
 }: MonitorTabPanelProps) {
   const rawPoints: SeriesPoint[] =
-    activeNasaReplay && nasaTimeline && nasaTimeline.length > 0
-      ? nasaTimeline.slice(-14).map((p) => ({
+    activeNasaReplay
+      ? (nasaTimeline ?? []).slice(-14).map((p) => ({
           label: p.observation.relativeLabel,
           score: p.evaluation.readinessScore,
           hr: p.observation.vitals.heart_rate ?? null,
@@ -40,24 +40,31 @@ export function MonitorTabPanel({
       : [...(userState?.observations ?? [])]
           .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt))
           .slice(-14)
-          .map((obs) => ({
-            label: obs.capturedAt.slice(11, 16) || obs.dateKey,
-            score: obs.readinessScore,
-            hr: obs.vitals.heart_rate ?? null,
-            glucose: obs.vitals.glucose ?? null,
-            status: obs.overallStatus,
-          }));
+          .map((obs) => {
+            const d = new Date(obs.capturedAt);
+            const label = Number.isNaN(d.getTime())
+              ? obs.dateKey
+              : d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+            return {
+              label,
+              score: obs.readinessScore,
+              hr: obs.vitals.heart_rate ?? null,
+              glucose: obs.vitals.glucose ?? null,
+              status: obs.overallStatus,
+            };
+          });
 
   const obsNewestFirst = [...(userState?.observations ?? [])].sort((a, b) =>
     b.capturedAt.localeCompare(a.capturedAt)
   );
+  const nasaNewestFirst = [...(nasaTimeline ?? [])].reverse();
 
   return (
-    <section className="right-stack">
+    <section className="right-stack monitor-layout">
       <MonitorChartCard
         evaluation={evaluation}
         rawPoints={rawPoints}
-        totalObsCount={obsNewestFirst.length}
+        totalObsCount={activeNasaReplay ? nasaNewestFirst.length : obsNewestFirst.length}
         activeNasaReplay={activeNasaReplay}
         onNavigateTab={onNavigateTab}
       />
@@ -65,62 +72,67 @@ export function MonitorTabPanel({
       <div className="card">
         <div className="group-head" style={{ marginBottom: 10 }}>
           <h2 className="card-title" style={{ marginBottom: 0 }}>
-            📋 Bitácora Real Intra-día e Historial
+            Historial
           </h2>
-          <span className="val-pill">{userState?.history.length ?? 0} días · {obsNewestFirst.length} tomas</span>
+          <span className="val-pill">{activeNasaReplay ? `NASA ${activeNasaReplay.subjectId} · ${nasaNewestFirst.length} tomas` : `${userState?.history.length ?? 0} días · ${obsNewestFirst.length} tomas personales`}</span>
         </div>
 
-        {obsNewestFirst.length === 0 ? (
-          <p style={{ fontSize: '0.82rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
-            {userState
-              ? 'Bitácora limpia: aún no has guardado observaciones. Cada toma real registra fecha exacta, contexto clínico y variables medidas (sin rellenar las omitidas).'
-              : 'Inicia sesión en Controles del Cuerpo o explora los 3,965 casos NASA mientras tu bitácora personal permanece en blanco.'}
-          </p>
+        {activeNasaReplay ? (
+          nasaNewestFirst.length === 0 ? (
+            <p className="empty-message">No hay tomas NASA disponibles para este caso.</p>
+          ) : (
+            <div className="observation-list">
+              {nasaNewestFirst.slice(0, 15).map(({ observation, evaluation: pointEvaluation }) => {
+                const v = observation.vitals;
+                const parts = [
+                  typeof v.heart_rate === 'number' ? `Pulso ${v.heart_rate}` : null,
+                  typeof v.bp_systolic === 'number' ? `Presión ${v.bp_systolic}/${v.bp_diastolic ?? '—'}` : null,
+                  typeof v.glucose === 'number' ? `Glucosa ${v.glucose}` : null,
+                  typeof v.temperature === 'number' ? `${v.temperature.toFixed(1)} °C` : null,
+                  typeof v.sleep_hours === 'number' ? `Sueño ${v.sleep_hours} h` : null,
+                ].filter(Boolean);
+                return (
+                  <article key={observation.observationId} className="observation-item">
+                    <div className="observation-heading">
+                      <span>{observation.relativeLabel} · {observation.studyId}</span>
+                      <span className="meta-pill" style={{ background: bgForLevel(statusToLevel(pointEvaluation.overallStatus)) }}>{pointEvaluation.overallStatus}</span>
+                    </div>
+                    <p>{parts.join(' · ') || 'Sin signos medidos'}</p>
+                  </article>
+                );
+              })}
+            </div>
+          )
+        ) : obsNewestFirst.length === 0 ? (
+          <p className="empty-message">Aún no tienes mediciones guardadas.</p>
         ) : (
-          <div className="nasa-table-wrap">
-            <table className="nasa-table">
-              <thead>
-                <tr>
-                  <th>Fecha / Hora</th>
-                  <th>Estado</th>
-                  <th>Cobertura</th>
-                  <th>Contexto</th>
-                  <th>Signos medidos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {obsNewestFirst.slice(0, 15).map((obs) => {
-                  const lvl = statusToLevel(obs.overallStatus);
-                  const moodLabel = obs.vitals.mood
-                    ? MOOD_LABELS_FULL[DOMAIN_MOOD_TO_INDEX[obs.vitals.mood]]
-                    : null;
-                  const vitParts = [
-                    typeof obs.vitals.heart_rate === 'number' ? `FC ${obs.vitals.heart_rate}` : null,
-                    typeof obs.vitals.bp_systolic === 'number' && typeof obs.vitals.bp_diastolic === 'number'
-                      ? `PA ${obs.vitals.bp_systolic}/${obs.vitals.bp_diastolic}`
-                      : null,
-                    typeof obs.vitals.glucose === 'number' ? `Gluc ${obs.vitals.glucose}` : null,
-                    typeof obs.vitals.temperature === 'number' ? `${obs.vitals.temperature.toFixed(1)}°C` : null,
-                    typeof obs.vitals.sleep_hours === 'number' ? `Sueño ${obs.vitals.sleep_hours}h` : null,
-                    moodLabel ? `Ánimo ${moodLabel}` : null,
-                  ].filter(Boolean);
+          <div className="observation-list">
+            {obsNewestFirst.slice(0, 15).map((obs) => {
+              const lvl = statusToLevel(obs.overallStatus);
+              const moodLabel = obs.vitals.mood
+                ? MOOD_LABELS_FULL[DOMAIN_MOOD_TO_INDEX[obs.vitals.mood]]
+                : null;
+              const vitParts = [
+                typeof obs.vitals.heart_rate === 'number' ? `Pulso ${obs.vitals.heart_rate}` : null,
+                typeof obs.vitals.bp_systolic === 'number' && typeof obs.vitals.bp_diastolic === 'number'
+                  ? `Presión ${obs.vitals.bp_systolic}/${obs.vitals.bp_diastolic}`
+                  : null,
+                typeof obs.vitals.glucose === 'number' ? `Glucosa ${obs.vitals.glucose}` : null,
+                typeof obs.vitals.temperature === 'number' ? `${obs.vitals.temperature.toFixed(1)} °C` : null,
+                typeof obs.vitals.sleep_hours === 'number' ? `Sueño ${obs.vitals.sleep_hours} h` : null,
+                moodLabel,
+              ].filter(Boolean);
 
-                  return (
-                    <tr key={obs.observationId}>
-                      <td className="mono">{obs.capturedAt.slice(0, 16).replace('T', ' ')}</td>
-                      <td>
-                        <span className="meta-pill" style={{ background: bgForLevel(lvl) }}>
-                          {obs.overallStatus}
-                        </span>
-                      </td>
-                      <td className="mono">{obs.coveragePct}%</td>
-                      <td>{obs.context.activityState} / {obs.context.posture}</td>
-                      <td>{vitParts.length > 0 ? vitParts.join(' · ') : '—'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+              return (
+                <article key={obs.observationId} className="observation-item">
+                  <div className="observation-heading">
+                    <time dateTime={obs.capturedAt}>{new Date(obs.capturedAt).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}</time>
+                    <span className="meta-pill" style={{ background: bgForLevel(lvl) }}>{obs.overallStatus}</span>
+                  </div>
+                  <p>{vitParts.join(' · ') || 'Sin signos medidos'}</p>
+                </article>
+              );
+            })}
           </div>
         )}
       </div>

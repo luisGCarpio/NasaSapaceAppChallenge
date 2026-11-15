@@ -1,3 +1,5 @@
+import { evaluateHealth } from '@/domain/health';
+import { readLocalState, saveLocalCheckin, completeLocalMission, resetLocalMissions, logLocalComms } from './local-state';
 import type {
   HealthEvaluation,
   HealthStatus,
@@ -7,7 +9,7 @@ import type {
 } from '@/domain/health';
 import type { BenchmarkMetrics } from '@/domain/nasa/benchmark-runner';
 import type { NasaAuditInventory, ObservationContext } from '@/domain/nasa/nasa-types';
-import type { CheckinEntry, CommsLogEntry, PublicUser, PublicUserState } from '@/server/storage/types';
+import type { CheckinEntry, CommsLogEntry, PublicUserState } from '@/server/storage/types';
 import type {
   NasaSubjectSummary,
   NasaSubjectTimelineResult,
@@ -42,36 +44,8 @@ async function requestJson<T>(url: string, options: RequestInit = {}): Promise<T
   return data as T;
 }
 
-export function apiGetState(): Promise<PublicUserState> {
-  return requestJson<PublicUserState>('/api/state', { method: 'GET' });
-}
-
-export function apiLogin(payload: { identifier: string; password: string }): Promise<{
-  token: string;
-  user: PublicUser;
-  state: PublicUserState;
-}> {
-  return requestJson('/api/auth/login', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
-
-export function apiRegister(payload: {
-  name: string;
-  username: string;
-  email?: string;
-  role?: string;
-  password: string;
-}): Promise<{ token: string; user: PublicUser; state: PublicUserState }> {
-  return requestJson('/api/auth/register', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
-
-export function apiLogout(): Promise<{ ok: boolean }> {
-  return requestJson('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+export async function apiGetState(): Promise<PublicUserState> {
+  return readLocalState();
 }
 
 export function apiEvaluate(
@@ -82,13 +56,14 @@ export function apiEvaluate(
   vitals: PartialVitalValues;
   evaluation: HealthEvaluation;
 }> {
-  return requestJson('/api/evaluate', {
-    method: 'POST',
-    body: JSON.stringify({ vitals, context }),
-  });
+  const evaluation = evaluateHealth(vitals, { context });
+  if (!evaluation.valid) {
+    return Promise.reject(new ApiError(evaluation.errors[0] || 'Datos inválidos', 422, { evaluation }));
+  }
+  return Promise.resolve({ valid: true, vitals: evaluation.vitals, evaluation });
 }
 
-export function apiSaveCheckin(payload: {
+export async function apiSaveCheckin(payload: {
   vitals: Record<string, unknown>;
   context?: Partial<ObservationContext>;
   clientSubmissionId: string;
@@ -99,10 +74,7 @@ export function apiSaveCheckin(payload: {
   evaluation: HealthEvaluation;
   state: PublicUserState;
 }> {
-  return requestJson('/api/checkin', {
-    method: 'POST',
-    body: JSON.stringify({ ...payload, isSimulation: false }),
-  });
+  return saveLocalCheckin(payload.vitals, payload.context, payload.clientSubmissionId);
 }
 
 export function apiRunScenario(scenarioId: ScenarioId): Promise<{
@@ -135,29 +107,23 @@ export function apiGetNasaSubjectTimeline(
   return requestJson(`/api/nasa-datasets?${qs.toString()}`, { method: 'GET' });
 }
 
-export function apiCompleteMission(missionId: string): Promise<{
+export async function apiCompleteMission(missionId: string): Promise<{
   state: PublicUserState;
   awardedXp: number;
   alreadyAwardedToday: boolean;
 }> {
-  return requestJson('/api/mission/complete', {
-    method: 'POST',
-    body: JSON.stringify({ missionId }),
-  });
+  return completeLocalMission(missionId);
 }
 
-export function apiResetMissions(): Promise<{ state: PublicUserState }> {
-  return requestJson('/api/mission/reset', { method: 'POST', body: JSON.stringify({}) });
+export async function apiResetMissions(): Promise<{ state: PublicUserState }> {
+  return resetLocalMissions();
 }
 
-export function apiLogComms(payload: {
+export async function apiLogComms(payload: {
   message: string;
   overallStatus: HealthStatus;
   readinessScore: number | null;
   copiedToClipboard: boolean;
 }): Promise<{ entry: CommsLogEntry; commsLog: CommsLogEntry[]; state: PublicUserState }> {
-  return requestJson('/api/comms/log', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  return logLocalComms(payload);
 }

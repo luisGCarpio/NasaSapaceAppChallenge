@@ -4,7 +4,7 @@ import { useAres } from '@/context/AresContext';
 import { AresIcon } from '../ui/Icons';
 
 export function AppHeader() {
-  const { state, simulatorOpen, setSimulatorOpen, logout } = useAres();
+  const { state, simulatorOpen, setSimulatorOpen } = useAres();
   if (!state) return null;
 
   const syncLabel =
@@ -12,7 +12,7 @@ export function AppHeader() {
       ? 'Respaldo sincronizado'
       : state.syncMeta.status === 'pending_retry'
         ? `Pendiente reintento (${state.syncMeta.pendingCount})`
-        : 'Almacenamiento local atómico';
+        : 'Guardado en este navegador';
 
   const syncColor =
     state.syncMeta.status === 'synced'
@@ -55,15 +55,7 @@ export function AppHeader() {
             <span>Simulador</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => void logout()}
-            aria-label="Cerrar sesión"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-[#1E2E4E] bg-[#0B1220] px-3 py-1.5 text-xs font-medium text-slate-300 hover:border-red-500/60 hover:text-red-200 transition-colors"
-          >
-            <AresIcon name="logout" size={15} />
-            <span className="hidden sm:inline">Salir</span>
-          </button>
+
         </div>
       </div>
     </header>

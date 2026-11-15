@@ -2,12 +2,16 @@
 
 import type { ActiveNasaReplay, ActiveSimulation } from '@/context/AresContext';
 import type { HealthEvaluation, PartialVitalValues, SystemId } from '@/domain/health';
+import type { ObservationContext } from '@/domain/nasa/nasa-types';
+import { AresIcon } from '@/components/ui/Icons';
 import { AstroStageCard } from './AstroStageCard';
+import { NasaDecisionCard } from './NasaDecisionCard';
 import { bgForLevel, statusToLevel, type TabKey } from './studio-types';
 
 interface AstroTabPanelProps {
   evaluation: HealthEvaluation;
   vitals: PartialVitalValues;
+  context?: Partial<ObservationContext>;
   activeSimulation: ActiveSimulation | null;
   activeNasaReplay: ActiveNasaReplay | null;
   hasSavedHistory: boolean;
@@ -22,6 +26,7 @@ interface AstroTabPanelProps {
 export function AstroTabPanel({
   evaluation,
   vitals,
+  context,
   activeSimulation,
   activeNasaReplay,
   hasSavedHistory,
@@ -47,7 +52,7 @@ export function AstroTabPanel({
       {activeNasaReplay ? (
         <div className="nasa-banner">
           <span>
-            🛰️ <strong>Caso Real NASA (solo lectura):</strong> {activeNasaReplay.subjectId} ·{' '}
+            <strong>NASA · solo lectura</strong>  {activeNasaReplay.subjectId} ·{' '}
             {activeNasaReplay.studyId} ({activeNasaReplay.relativeLabel}) — Cobertura{' '}
             {evaluation.coverage.presentCount}/7
           </span>
@@ -58,7 +63,7 @@ export function AstroTabPanel({
       ) : activeSimulation ? (
         <div className="nasa-banner" style={{ background: 'var(--yellow-bg)' }}>
           <span>
-            🧪 <strong>Simulación educativa:</strong> {activeSimulation.label} (no altera tu bitácora)
+            <strong>Simulación:</strong> {activeSimulation.label} (no altera tu bitácora)
           </span>
           <button type="button" className="btn-tactile" onClick={onClearReplayOrSim}>
             Salir de simulación
@@ -67,14 +72,14 @@ export function AstroTabPanel({
       ) : !hasSavedHistory && evaluation.coverage.presentCount === 0 ? (
         <div className="nasa-banner">
           <span>
-            📋 <strong>Bitácora limpia (0 inventados):</strong> mide uno o más indicadores o carga un sujeto real NASA.
+            <strong>Comienza con una medición</strong>
           </span>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <button type="button" className="btn-tactile" onClick={() => onNavigateTab('controls')}>
-              🎛️ Controles
+              <AresIcon name="sliders" /> Medir
             </button>
             <button type="button" className="btn-tactile" onClick={() => onNavigateTab('nasa')}>
-              🛰️ Ver 3,965 datos NASA
+              <AresIcon name="activity" /> Explorar NASA
             </button>
           </div>
         </div>
@@ -88,10 +93,10 @@ export function AstroTabPanel({
 
       <div className="diagnosis-card" id="diagnosisCard" style={{ background: bgForLevel(overallLvl) }}>
         <span className="diagnosis-tag" id="diagTag">
-          MOTOR v{evaluation.algorithmVersion} • COBERTURA {evaluation.coverage.presentCount}/7 ({evaluation.coverage.coveragePct}%)
+          {evaluation.coverage.presentCount}/7 indicadores
         </span>
         <h2 className="diagnosis-title" id="diagTitle">{evaluation.crossConclusion.title}</h2>
-        <p className="diagnosis-text" id="diagText">{evaluation.crossConclusion.message}</p>
+
 
         <div className="meta-pills-row">
           <span className={`meta-pill ${evaluation.quality.needsRecheck ? 'warn' : 'ok'}`}>
@@ -101,35 +106,33 @@ export function AstroTabPanel({
             Índice orientativo: {evaluation.readinessScore !== null ? `${evaluation.readinessScore}/100` : 'N/D'}
           </span>
           {evaluation.quality.recheckWindow ? (
-            <span className="meta-pill warn">⏱️ Reevaluar: {evaluation.quality.recheckWindow}</span>
+            <span className="meta-pill warn">Reevaluar: {evaluation.quality.recheckWindow}</span>
           ) : null}
           {activeBaselines.map(([key, base]) => (
             <span key={key} className={`meta-pill ${base?.significantDrift ? 'warn' : ''}`}>
-              📈 {base?.summaryText}
+              {base?.summaryText}
             </span>
           ))}
         </div>
 
         {restrictEx ? (
           <div className="trace-box" style={{ background: 'var(--red-bg)' }}>
-            <strong>⚠️ Ejercicio intenso restringido por seguridad clínica:</strong>{' '}
+            <strong>Ejercicio intenso restringido:</strong>{' '}
             {evaluation.clinicalRestrictions.reasons.join(' ')}
           </div>
         ) : null}
 
-        {evaluation.ruleTraces.length > 0 ? (
-          <div className="trace-box">
-            <strong>Reglas aplicadas:</strong>{' '}
-            {evaluation.ruleTraces.map((t) => t.ruleId).join(' · ')} —{' '}
-            <a href={refUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--periwinkle)', fontWeight: 800 }}>
-              Fuente: {refLabel} ↗
-            </a>
-          </div>
-        ) : null}
+        <details className="trace-box">
+          <summary>Ver detalles</summary>
+          <p id="diagText">{evaluation.crossConclusion.message}</p>
+          {evaluation.ruleTraces.length > 0 ? (
+            <p><a href={refUrl} target="_blank" rel="noreferrer">{refLabel}</a></p>
+          ) : null}
+        </details>
 
         <div className="actions-row" id="actionsRow">
           <button type="button" className="action-chip" onClick={() => onActionMission('hydrate')}>
-            💧 Hidratarse ahora
+            <AresIcon name="droplet" /> Hidratarse
           </button>
           <button
             type="button"
@@ -137,19 +140,27 @@ export function AstroTabPanel({
             disabled={restrictEx}
             onClick={() => onActionMission('exercise')}
           >
-            {restrictEx ? '🔒 Ejercicio pausado por alerta' : '🏃 30 min ejercicio'}
+            <AresIcon name="activity" /> {restrictEx ? 'Ejercicio pausado' : 'Ejercicio'}
           </button>
           <button type="button" className="action-chip" onClick={() => onActionMission('rest')}>
-            😴 Descansar / Dormir
+            <AresIcon name="moon" /> Descansar
           </button>
           <button type="button" className="action-chip" onClick={onOpenBreather}>
-            🧘 Pausa mental 10s
+            <AresIcon name="wind" /> Respirar
           </button>
           <button type="button" className="action-chip primary-alert" onClick={onPingEarth}>
-            📡 Avisar a Tierra
+            <AresIcon name="radio" /> Avisar a Tierra
           </button>
         </div>
       </div>
+
+      <NasaDecisionCard
+        vitals={vitals}
+        evaluation={evaluation}
+        context={context}
+        onPingEarth={onPingEarth}
+        onGoToControls={() => onNavigateTab('controls')}
+      />
     </section>
   );
 }
