@@ -282,6 +282,7 @@ export function simulateGravityReentryStress(
   const dbp = typeof vitals.bp_diastolic === 'number' ? vitals.bp_diastolic : null;
   const alreadyTilted =
     context?.activityState === 'orthostatic_tilt' || context?.posture === 'standing_tilt';
+  const resolvedPosture = context?.posture ?? (alreadyTilted ? 'standing_tilt' : 'supine');
 
   // Deltas empíricos Supine -> Tilt medidos en POST_TEST de MR001G_C3_TILT (n=41 pares post-microgravedad):
   // Mediana (P50): dHr = +60 bpm, dSbp = +2 mmHg, dDbp = 0 mmHg
@@ -356,7 +357,12 @@ export function simulateGravityReentryStress(
           ? ` y PA ${projectedTiltSbp}/${projectedTiltDbp} mmHg (presión de pulso ${projectedPulsePressure} mmHg)`
           : ''
       }, perfil compatible con terminación temprana por presíncope en la cohorte UTMB.`,
-      baselinePosture: alreadyTilted ? 'standing_tilt (ya bajo estrés ortostático)' : (context?.posture ?? 'supine'),
+      baselinePosture:
+        alreadyTilted && resolvedPosture === 'standing_tilt'
+          ? 'standing_tilt (ya bajo estrés ortostático)'
+          : alreadyTilted
+            ? `${resolvedPosture} (ya bajo estrés ortostático)`
+            : resolvedPosture,
       currentHr: hr,
       currentSbp: sbp,
       currentDbp: dbp,
@@ -392,7 +398,7 @@ export function simulateGravityReentryStress(
           ? ` y PA ${projectedTiltSbp}/${projectedTiltDbp} mmHg`
           : ''
       }. Requiere carga hídrica-salina y prendas de compresión antes de reentrada o EVA.`,
-      baselinePosture: alreadyTilted ? 'standing_tilt' : (context?.posture ?? 'supine'),
+      baselinePosture: resolvedPosture,
       currentHr: hr,
       currentSbp: sbp,
       currentDbp: dbp,
@@ -426,7 +432,7 @@ export function simulateGravityReentryStress(
         ? `; PA proyectada ${projectedTiltSbp}/${projectedTiltDbp} mmHg`
         : ''
     }). Reserva hemodinámica suficiente para transición a gravedad.`,
-    baselinePosture: alreadyTilted ? 'standing_tilt' : (context?.posture ?? 'supine'),
+    baselinePosture: resolvedPosture,
     currentHr: hr,
     currentSbp: sbp,
     currentDbp: dbp,
@@ -525,7 +531,7 @@ export function evaluateNasaOperationalDecision(
     return {
       triageLevel: 'LEVEL_3_MISSION_ABORT_OR_RETURN',
       badgeText: '🔴 NIVEL 3 · ABORTO OPERATIVO / INTERVENCIÓN INMEDIATA',
-      title: 'Suspensión inmediata de misión extravehicular y protocolo de estabilización / retorno',
+      title: 'Suspensión EVA y retorno médico',
       operationalVerdict:
         'Los signos vitales superan los umbrales críticos de seguridad de la cohorte espacial NASA (fuera del P99 de CRF_C3_VITALS / extremos metabólicos de OSD-575) con alto riesgo de descompensación o síncope ortostático en gravedad (MR001G_C3_TILT). Requiere intervención inmediata del Flight Surgeon en Tierra y abortar actividades críticas.',
       requiresEarthIntervention: true,
@@ -556,7 +562,7 @@ export function evaluateNasaOperationalDecision(
     return {
       triageLevel: 'LEVEL_2_EARTH_INTERVENTION',
       badgeText: '🟠 NIVEL 2 · INTERVENCIÓN DE TIERRA REQUERIDA (FLIGHT SURGEON)',
-      title: 'Escalamiento a Médico de Vuelo en Tierra y restricción de actividades físicas',
+      title: 'Consultar a Tierra y pausar esfuerzo',
       operationalVerdict: `Se detectan ${extremeOutliers.length} indicador(es) en el extremo estadístico (>P95 o <P5) de la cohorte NASA (${extremeOutliers
         .map((c) => `${c.label}: P${c.estimatedPercentile}`)
         .join(', ') || 'alerta clínica activa'}). No basta el autocuidado aislado: se requiere consulta con Tierra para autorizar botiquín a bordo y pausar EVA.`,
@@ -589,7 +595,7 @@ export function evaluateNasaOperationalDecision(
     return {
       triageLevel: 'LEVEL_1_ONBOARD_COUNTERMEASURE',
       badgeText: '🔵 NIVEL 1 · CONTRAMEDIDA AUTÓNOMA A BORDO (SIN INTERVENCIÓN DE TIERRA)',
-      title: 'Desviación fisiológica manejable a bordo sin escalar a Control de Misión',
+      title: 'Ajuste manejable a bordo',
       operationalVerdict:
         'Tus indicadores muestran una desviación leve/moderada respecto a la mediana de microgravedad NASA (P10–P90 de CRF_C3_VITALS / BRSMACT_C1_SLEEP), pero sin criterios de emergencia. El astronauta puede corregirlo autónomamente en la nave y reevaluar.',
       requiresEarthIntervention: false,
@@ -614,7 +620,7 @@ export function evaluateNasaOperationalDecision(
   return {
     triageLevel: 'LEVEL_0_AUTONOMOUS_NOMINAL',
     badgeText: '🟢 NIVEL 0 · AUTONOMÍA TOTAL (DENTRO DE COHORTE NOMINAL NASA)',
-    title: 'Parámetros alineados con la cohorte espacial NASA — Misión, EVA y retorno autorizados',
+    title: 'Parámetros en rango nominal NASA',
     operationalVerdict:
       'Todos los indicadores medidos se encuentran dentro de la banda intercuartil/nominal (P10–P90) de los estudios humanos de la NASA (CRF_C3_VITALS, MR010G_C3_LAB y BRSMACT_C1_SLEEP) y la simulación de gravedad MR001G_C3_TILT proyecta tolerancia ortostática adecuada.',
     requiresEarthIntervention: false,

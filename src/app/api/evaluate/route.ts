@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { evaluateHealth } from '@/domain/health';
-import { evaluateNasaOperationalDecision } from '@/domain/nasa/cohort-decision';
+import { evaluateNasaOperationalDecision, type GravityStressMode } from '@/domain/nasa/cohort-decision';
 import { parseJsonBody } from '../http-helpers';
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -9,6 +9,10 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const rawVitals = 'vitals' in bodyResult.data ? bodyResult.data.vitals : bodyResult.data;
   const rawContext = 'context' in bodyResult.data ? bodyResult.data.context : undefined;
+  const stressMode: GravityStressMode =
+    'stressMode' in bodyResult.data && bodyResult.data.stressMode === 'post_bedrest_p25_vulnerable'
+      ? 'post_bedrest_p25_vulnerable'
+      : 'post_bedrest_median';
   const evaluation = evaluateHealth(rawVitals, { context: rawContext as never });
 
   if (!evaluation.valid) {
@@ -26,7 +30,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   const operationalDecision = evaluateNasaOperationalDecision(
     evaluation.vitals,
     evaluation,
-    rawContext as never
+    rawContext as never,
+    stressMode
   );
 
   return NextResponse.json(
