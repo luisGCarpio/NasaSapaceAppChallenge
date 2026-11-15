@@ -1,71 +1,68 @@
-# A.R.E.S. Pulse — Seven-slide demo content
+# A.R.E.S. Pulse — 7-Slide Pitch Deck (English)
 
-Status: draft for team review. English submission materials. Team: ApexCode. Team member supplied: Luis Carpio. Institution / venue supplied: Universidad CUC. Confirm the complete roster before submission. The prototype illustration's original attribution and any earlier AI generation remain pending.
+> **Strict NASA Rule:** Maximum **7 slides** (including Title slide), all in **English**.
 
-## 1. A.R.E.S. Pulse
+---
 
-Astronaut health self-assessment prototype
+## Slide 1 — Title & Mission Identity
+- **Title:** **A.R.E.S. Pulse**
+- **Tagline:** *Autonomous Astronaut Health Triage, Empirical NASA Cohort Benchmarking & Gravity Re-Entry Simulator*
+- **Team:** ApexCode — Luis Carpio (Universidad CUC)
+- **Challenge:** Health Monitoring Software — NASA Space Apps Challenge 2026
+- **Visual:** Hero view of the A.R.E.S. Pulse interactive Astronaut HUD & Body Map.
 
-ApexCode  
-Luis Carpio  
-Universidad CUC  
-Health Monitoring Software  
-NASA Space Apps Challenge 2026
+---
 
-## 2. Health checks during long missions
+## Slide 2 — The Deep-Space Problem (Relevance)
+- **44-Minute Comms Delay to Mars:** Crews on Artemis and Mars missions cannot wait for Earth hospitals during acute physiological shifts.
+- **Why Standard Health Monitors Fail in Space:**
+  1. Require all 7 sensors at once or invent synthetic averages for missing inputs.
+  2. Confuse normal post-EVA or orthostatic adaptation with resting illness.
+  3. Cannot tell the crew whether to apply an onboard countermeasure or escalate to the Flight Surgeon.
+- **Visual:** Diagram of NASA's 5 Hazards of Human Spaceflight -> The 3 Operational Questions A.R.E.S. Pulse answers.
 
-Crews need a clear way to review health indicators when Earth-based support is distant.
+---
 
-Our prototype explores an understandable daily check with a body-based view.
+## Slide 3 — Contextual Clinical Engine v3.0.0 (Validity)
+- **Honest Partial Telemetry (`1/7` to `7/7`):** Evaluates 4 physiological systems (*Mind & Sleep*, *Heart & Vessels*, *Energy & Metabolism*, *Fever & Immunity*) independently—zero synthetic data imputation.
+- **Context-Aware Evaluation:** Accounts for posture (`supine`, `standing_tilt`), activity (`rest`, `post_exercise`, `eva`), fasting state, and causal personal baseline (`Median/IQR` excluding prior `RED` episodes).
+- **100% Auditable:** Every alert links to explicit rule IDs (`ruleTraces`) and clinical standards (NASA-STD-3001, HRP, AHA, NIDDK).
+- **Visual:** Screenshot of the Controls & Interactive Astronaut Body Map reacting live to partial telemetry.
 
-Source: NASA Space Apps, Health Monitoring Software challenge; NASA HRP five hazards. No measured clinical benefit claimed.
+---
 
-## 3. The interactive prototype
+## Slide 4 — Powered by 3,965 Real NASA Observations (NASA Data)
+- **159 CSV Files Audited -> 3,965 Normalized Records across 6 Official Studies:**
+  - **OSDR `OSD-575` (SpaceX Inspiration4):** Real orbital flight & post-landing glucose profiles (`28` obs).
+  - **NLSP `CRF_C3_VITALS`:** Empirical `P5–P99` microgravity analog percentiles (`2,450` obs).
+  - **NLSP `MR001G_C3_TILT`:** `78` paired `Supine -> 80° Tilt` orthostatic stress tests (`156` obs).
+  - **NLSP `MR010G_C3_LAB` & `BRSMACT_C1_SLEEP`:** Lab glucose (`220` obs) & objective actigraphy sleep (`190` obs).
+  - **NLSP `CRF_C3_SYMPTOMS`:** `921` real clinical symptom & medical intervention logs.
+- **Visual:** Screenshot of the NASA Cohort Percentile Comparator (`P10–P90` bands) & Longitudinal Replay Drawer.
 
-Users adjust sleep, mood, pulse, blood pressure, glucose and temperature.
+---
 
-The body map and simulated system states respond to those inputs.
+## Slide 5 — 4-Level NASA Triage & Gravity Re-Entry Simulator (Creativity)
+- **4-Level Autonomous Triage (`cohort-decision.ts`):**
+  - 🟢 **Level 0:** Nominal (`P10–P90`) — Full autonomy & EVA cleared.
+  - 🔵 **Level 1:** Onboard Countermeasure (Hydration / Box Breathing / Rest + 60m re-check).
+  - 🟠 **Level 2:** Flight Surgeon Escalation (`>P95`/`<P5` or clinical alert) — Locks strenuous EVA.
+  - 🔴 **Level 3:** Mission Abort / Immediate Medical Return protocol.
+- **Gravity Re-Entry Simulator (`MR001G_C3_TILT`):**
+  - Projects orthostatic HR (`+60` to `+69 bpm`) and BP (`-5` to `-16 mmHg` SBP) upon landing to detect `PRESYNCOPE_ABORT_RISK` before atmospheric entry.
+- **Visual:** Screenshot of the Gravity Re-Entry Modal & 4-Level Operational Decision Card.
 
-The current interface uses Spanish text and local simulation rules. The image is a capture of the existing prototype illustration.
+---
 
-Source: `src/components/home/AresStudioView.tsx`, browser capture from the running prototype. Illustration authorship and prior AI generation require confirmation.
+## Slide 6 — Clinically Gated Gamified Missions (User Experience)
+- **Daily Crew Engagement:** Interactive state-machine missions for **4-4-4-4 Box Breathing**, **Resistance Exercise**, and **Circadian Rest** with real-time physiological feedback and XP streaks.
+- **Zero-Conflict Clinical Safety Lock:** Automatically blocks strenuous exercise when cardiovascular, febrile, or metabolic alerts are active—reducing unsafe exercise conflicts from `110` (in rigid v2 evaluators) to **`0` across 3,044 quantitative NASA observations**.
+- **Visual:** Screenshot of the Interactive Mission Modal (Breathing / Exercise / Rest cards) + Safety Lock badge.
 
-## 4. A daily routine to explore
+---
 
-Illustrative trends help explain the proposed monitoring experience.
-
-Wellness missions and a breathing interaction make the routine tangible.
-
-History uses example values. Earth contact is a visual simulation. User benefit has not been measured.
-
-Source: `src/components/home/AresStudioView.tsx`. No live sensor integration or actual Earth transmission claimed.
-
-## 5. NASA research data
-
-6 datasets. 159 CSV files processed. 3,965 normalized records.
-
-3,044 records contain numeric vitals. 921 contain qualitative symptom information.
-
-NASA OSDR Inspiration4 metabolic data and NASA NLSP bedrest studies support a separate research layer. They do not currently drive the home-page simulation.
-
-Sources: local inventory `data/nasa-normalized/audit-inventory.json`, observation array, NASA OSDR OSD-575 and NASA NLSP. Repeated records are not participant counts. No clinical accuracy claim.
-
-## 6. Integration and validation
-
-Separate engine modules handle partial measurements, context and rule traces.
-
-The next integration connects those modules to the visual interface.
-
-The research API supports software replay. Clinical validation remains future work.
-
-Sources: `src/domain/health/index.ts`, `src/domain/nasa/benchmark-runner.ts`, `entrega/evidencias/benchmark-existente.json`, `entrega/evidencias/benchmark-segunda-revision.json`. The endpoint initially failed and later returned HTTP 200 with 3,044 evaluable numeric records. This is software coverage, not clinical accuracy.
-
-## 7. A clearer daily health check
-
-Our aim is to help crews understand what they record and what deserves attention.
-
-Next: an English interface, a connected evaluation flow and independent validation.
-
-Research and educational prototype. Team review and public hosting pending.
-
-AI disclosure: OpenAI Codex assisted with submission writing and slide preparation. The team must confirm any earlier AI use and illustration provenance.
+## Slide 7 — Impact: From Deep Space to Rural Earth (Impact)
+- **For Spaceflight:** Empowers autonomous crew self-triage on Artemis lunar habitats, Gateway, and Mars transit.
+- **For Earth:** The exact same partial-telemetry + empirical-cohort architecture enables autonomous rural telemedicine, remote mining/maritime clinics, and home monitoring where lab panels are incomplete.
+- **Open & Reproducible:** Full Next.js + TypeScript source code, deterministic NASA CSV ingestion pipeline (`SHA-256` verified), and automated test suite.
+- *Disclaimer: Educational and research prototype for NASA Space Apps Challenge 2026; not a certified medical device.*

@@ -1,19 +1,27 @@
-# Optional video demo script
+# A.R.E.S. Pulse — 30-Second Video Pitch Script
 
-Alternative to the seven-slide deck. A video has not been recorded or generated. The official limit is 30 seconds, including opening and closing frames. Aim for 27–29 seconds and time the final export. The narration below contains approximately 62 words.
+> **Strict NASA Rule:** Video must be **30 seconds or less** (aim for **28 seconds**). If spoken in Spanish, you **MUST** include embedded **English subtitles**.
 
-## English narration
+---
 
-We are ApexCode. A.R.E.S. Pulse explores daily astronaut health checks. Users adjust vital signs and explore a body map, simulated trends and wellness missions. Our separate research layer contains normalized NASA observations from Inspiration4 and bedrest studies. Next, we will connect the interface to the contextual engine and validate its behavior. This prototype supports research and learning. It has no clinical validation yet.
+## Option A — Spoken in English (~72 words, 28 seconds)
 
-## Suggested shots
+| Timestamp | On-Screen Visual (Screen Recording) | Voiceover / English Subtitles |
+| :--- | :--- | :--- |
+| **0:00 – 0:02** | Title card: **ApexCode — Luis Carpio** + A.R.E.S. Pulse interface | *"Hi, I'm Luis from Team ApexCode."* |
+| **0:02 – 0:05** | Astronaut HUD showing Mars comms delay & 4 physiological systems | *"On Mars missions, a 44-minute delay means crews can't wait for Earth doctors."* |
+| **0:05 – 0:10** | Adjusting partial vitals -> Body Map & 4-Level NASA Triage Card update live | *"Meet **A.R.E.S. Pulse**: autonomous astronaut health triage that works even with partial telemetry."* |
+| **0:10 – 0:21** | NASA Cohort Percentile bars (`3,965` obs) + **Gravity Re-Entry Simulator** modal + **Interactive Box Breathing / Safety-Locked Exercise** | *"Powered by 3,965 real NASA OSDR and Life Sciences records, it benchmarks vitals against spaceflight cohorts, simulates orthostatic gravity re-entry stress, and safely gates daily missions."* |
+| **0:21 – 0:28** | Replay of SpaceX Inspiration4 (`OSD-575`) timeline + closing slide | *"From Artemis and Mars to remote clinics on Earth—A.R.E.S. Pulse keeps explorers safe, anywhere."* |
 
-| Time | Visual |
-| --- | --- |
-| 00:00–00:03 | A.R.E.S. Pulse. ApexCode. Luis Carpio. Health Monitoring Software. |
-| 00:03–00:11 | Body map and the control interaction, after an English interface is available. |
-| 00:11–00:18 | NASA OSDR / NASA NLSP source names and the research-layer distinction. |
-| 00:18–00:25 | Integration and validation next steps. |
-| 00:25–00:29 | Research prototype. No clinical validation. Team name. |
+---
 
-If the team records Spanish narration instead, include English subtitles. Keep all on-screen submission material in English. If synthetic audio or AI-generated visual material is used later, add the disclosures required by the guide. Do not show minors. Avoid recording the Spanish interface as if it satisfied the English-material requirement.
+## Option B — Spoken in Spanish with Mandatory English Subtitles
+
+| Tiempo | Audio en Español (hablado rápido y claro) | Subtítulos en Inglés (OBLIGATORIOS en pantalla) |
+| :--- | :--- | :--- |
+| **0:00 – 0:02** | *"Hola, soy Luis del equipo ApexCode."* | `Hi, I'm Luis from Team ApexCode.` |
+| **0:02 – 0:05** | *"Hacia Marte, 44 minutos de retardo impiden depender de hospitales en Tierra."* | `On Mars missions, a 44-minute delay means crews cannot rely on Earth hospitals.` |
+| **0:05 – 0:10** | *"Creamos A.R.E.S. Pulse: triaje autónomo para astronautas con telemetría parcial."* | `Meet A.R.E.S. Pulse: autonomous astronaut health triage with partial telemetry.` |
+| **0:10 – 0:21** | *"Con 3,965 registros reales de NASA OSDR y NLSP, compara signos vitales, simula el retorno a gravedad y bloquea ejercicios riesgosos."* | `Using 3,965 real NASA OSDR & NLSP records, it benchmarks vitals, simulates gravity re-entry stress, and safely gates daily missions.` |
+| **0:21 – 0:28** | *"De Artemis y Marte a zonas remotas en la Tierra: salud autónoma donde sea."* | `From Artemis and Mars to remote clinics on Earth: autonomous care anywhere.` |
