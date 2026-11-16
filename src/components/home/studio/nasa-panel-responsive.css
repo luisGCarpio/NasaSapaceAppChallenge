@@ -1,0 +1,141 @@
+@media (hover: hover) {
+  .nasa-modal-trigger:not(:disabled):not([aria-disabled="true"]):hover {
+    background-color: var(--lavender-soft);
+  }
+
+  .nasa-modal-close:not(:disabled):not([aria-disabled="true"]):hover,
+  .gravity-modal-close:not(:disabled):not([aria-disabled="true"]):hover {
+    background-color: var(--lavender-soft);
+  }
+
+  .nasa-sim-launch:not(:disabled):not([aria-disabled="true"]):hover {
+    background-color: #3646D5;
+  }
+
+  .gravity-skip-btn:not(:disabled):not([aria-disabled="true"]):hover {
+    background-color: #3B3860;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .nasa-modal-trigger,
+  .nasa-modal-close,
+  .nasa-sim-launch,
+  .gravity-modal-close,
+  .gravity-skip-btn {
+    transition-property: scale, transform, box-shadow, background-color;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+  }
+
+  .nasa-modal-trigger:not(:disabled):not([aria-disabled="true"]):active,
+  .nasa-modal-close:not(:disabled):not([aria-disabled="true"]):active,
+  .nasa-sim-launch:not(:disabled):not([aria-disabled="true"]):active,
+  .gravity-modal-close:not(:disabled):not([aria-disabled="true"]):active,
+  .gravity-skip-btn:not(:disabled):not([aria-disabled="true"]):active {
+    scale: 0.96;
+  }
+
+  .gravity-rocket-svg {
+    animation: rocketFlyUp 1800ms cubic-bezier(0.25, 0.08, 0.35, 1) forwards;
+  }
+
+  .rocket-flames {
+    animation: flameFlicker 180ms ease-in-out infinite;
+  }
+
+  .gravity-tablet-reveal {
+    animation: tabletReveal 240ms ease-out;
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .nasa-modal-trigger:not(:disabled):not([aria-disabled="true"]):hover,
+  .nasa-sim-launch:not(:disabled):not([aria-disabled="true"]):hover {
+    transform: translateY(-1px);
+  }
+}
+
+@media (min-width: 901px) {
+  .nasa-gravity-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .gravity-tablet {
+    width: min(100%, 600px);
+  }
+}
+
+@media (max-width: 600px) {
+  .nasa-replay,
+  .nasa-triage-card,
+  .nasa-gravity-card,
+  .nasa-details,
+  .nasa-compact-card {
+    padding: 16px;
+  }
+
+  .nasa-replay-heading h2 {
+    font-size: 1.3rem;
+  }
+
+  .nasa-replay .replay-row button {
+    width: 100%;
+  }
+
+  .nasa-audit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gravity-modal-overlay {
+    padding: calc(10px + env(safe-area-inset-top, 0px)) calc(10px + env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) calc(10px + env(safe-area-inset-left, 0px));
+  }
+
+  .gravity-tablet {
+    width: 100%;
+    max-height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    border-radius: 24px;
+  }
+
+  .gravity-tablet-header,
+  .gravity-tablet-body,
+  .gravity-tablet-footer {
+    padding: 12px 14px;
+  }
+
+  .gravity-metrics-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gravity-mode-switch .chip-toggle {
+    font-size: 0.78rem;
+    padding: 6px 8px;
+    line-height: 1.15;
+  }
+
+  .gravity-tablet-footer .btn-tactile,
+  .gravity-tablet-footer .nasa-modal-trigger {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
+  .nasa-gravity-toolbar .nasa-sim-launch {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .nasa-modal-trigger {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 400px) {
+  .nasa-audit-grid,
+  .gravity-mode-switch {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

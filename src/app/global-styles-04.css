@@ -1,0 +1,468 @@
+
+.save-error-alert,
+.save-error-banner {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 2px solid var(--danger);
+  border-radius: var(--radius-md);
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.btn-tactile:disabled,
+.action-chip:disabled,
+.mission-btn:disabled,
+.earth-btn:disabled,
+.chart-tab:disabled,
+.measure-toggle:disabled,
+.chip-toggle:disabled,
+.mood-btn:disabled,
+.nav-btn:disabled,
+.bottom-nav-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  scale: 1;
+  box-shadow: none;
+}
+
+.mission-btn.locked,
+.action-chip.locked,
+.action-chip[aria-disabled="true"] {
+  background: var(--red-bg);
+  border-style: dashed;
+  opacity: 0.88;
+  cursor: not-allowed;
+  transform: none;
+  scale: 1;
+  box-shadow: none;
+}
+
+.nasa-grid-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.stat-box {
+  background: var(--surface-alt);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.nasa-table-wrap {
+  overflow-x: auto;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: #FFF;
+}
+
+.nasa-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.nasa-table th,
+.nasa-table td {
+  padding: 8px 10px;
+  border-bottom: 1.5px solid var(--surface-alt);
+  text-align: left;
+}
+
+.nasa-table th {
+  background: var(--surface-alt);
+  font-weight: 800;
+}
+
+.replay-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.replay-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #FFF;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: 0.76rem;
+}
+
+.sidebar-brand {
+  display: none;
+}
+
+.sidebar-astronaut {
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.sidebar-astronaut .astro-stage {
+  display: block;
+  padding: 10px;
+  box-shadow: none;
+}
+
+.sidebar-astronaut .stage-header {
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.sidebar-astronaut .stage-header > span,
+.sidebar-astronaut .floating-hint {
+  display: none;
+}
+
+.sidebar-astronaut .traffic-badge {
+  font-size: 0.72rem;
+  padding: 4px 8px;
+}
+
+.sidebar-astronaut .astro-svg-wrap {
+  flex: none;
+  min-height: 0;
+  height: auto;
+  padding-top: 4px;
+}
+
+.sidebar-astronaut .astro-float {
+  display: block;
+  width: min(100%, 132px);
+  max-height: none;
+  height: auto;
+  margin: 0 auto;
+}
+
+.nasa-decision {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.nasa-decision > .trace-box,
+.nasa-decision > .nasa-comparison {
+  margin-bottom: 0 !important;
+}
+
+/* Lectura y navegación */
+.empty-message {
+  color: var(--ink-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.observation-list {
+  display: grid;
+  gap: 0;
+}
+
+.observation-item {
+  padding: 14px 0;
+  border-top: 1px solid #d8d2c5;
+}
+
+.observation-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 800;
+}
+
+.observation-item p {
+  margin-top: 6px;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Restaurar espaciado tipográfico dentro de bloques con texto rico */
+.trace-box h4,
+.diagnosis-card h4,
+.nasa-decision h4,
+.nasa-details h4 {
+  font-family: var(--font-display), sans-serif;
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+
+.trace-box p,
+.diagnosis-card p,
+.nasa-decision p,
+.nasa-details p {
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+
+.trace-box p:last-child,
+.diagnosis-card p:last-child,
+.nasa-decision p:last-child,
+.nasa-details p:last-child {
+  margin-bottom: 0;
+}
+
+.trace-box ul,
+.trace-box ol,
+.diagnosis-card ul,
+.diagnosis-card ol,
+.nasa-decision ul,
+.nasa-decision ol,
+.nasa-details ul,
+.nasa-details ol {
+  margin: 8px 0;
+  padding-left: 1.4em;
+}
+
+.trace-box li + li,
+.diagnosis-card li + li,
+.nasa-decision li + li,
+.nasa-details li + li {
+  margin-top: 4px;
+}
+
+/* Foco visible WCAG AA */
+input[type="range"]:focus-visible,
+input[type="checkbox"]:focus-visible,
+.hotspot:focus-visible,
+.nav-btn:focus-visible,
+.bottom-nav-btn:focus-visible,
+.btn-tactile:focus-visible,
+.action-chip:focus-visible,
+.mood-btn:focus-visible,
+.chip-toggle:focus-visible,
+.mission-btn:focus-visible,
+.chart-tab:focus-visible,
+.measure-toggle:focus-visible,
+.earth-btn:focus-visible,
+.context-select:focus-visible,
+details summary:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+input[type="range"]:focus-visible {
+  border-radius: 10px;
+}
+
+/* HOVER SOLO EN DISPOSITIVOS CON PUNTERO */
+@media (hover: hover) {
+  .nav-btn:not(.active):not(:disabled):not([aria-disabled="true"]):hover {
+    background-color: var(--surface-alt);
+  }
+
+  .hotspot:hover {
+    opacity: 0.85;
+  }
+
+  .action-chip:not(:disabled):not([aria-disabled="true"]):not(.locked):not(.primary-alert):hover {
+    background-color: var(--yellow-bg);
+  }
+
+  .diagnosis-card details summary:hover,
+  .nasa-compact-clinical summary:hover,
+  .sim-disclosure > summary:hover,
+  .context-disclosure > summary:hover {
+    background-color: var(--surface-alt);
+  }
+
+  .btn-tactile:not(:disabled):not([aria-disabled="true"]):not(.active-green):not(.active-yellow):not(.active-red):hover,
+  .mood-btn:not(:disabled):not([aria-disabled="true"]):not(.selected):hover,
+  .chip-toggle:not(:disabled):not([aria-disabled="true"]):not(.active):hover {
+    background-color: var(--surface-alt);
+  }
+
+  .measure-toggle:not(:disabled):not([aria-disabled="true"]):not(.omitted):hover {
+    background-color: var(--green);
+  }
+
+  .measure-toggle.omitted:not(:disabled):not([aria-disabled="true"]):hover {
+    background-color: var(--surface);
+  }
+
+  input[type="range"]:not(:disabled)::-webkit-slider-thumb:hover,
+  input[type="range"]:not(:disabled)::-moz-range-thumb:hover {
+    background-color: var(--tangerine-dark);
+  }
+}
+
+@keyframes floatAstroGentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* MOTION & ANIMACIONES SOLO CON PREFERS-REDUCED-MOTION: NO-PREFERENCE */
+@media (prefers-reduced-motion: no-preference) {
+  .astro-float {
+    animation: floatAstroGentle 4.5s ease-in-out infinite;
+  }
+
+  .astro-float:hover,
+  .astro-float:focus-within {
+    animation-play-state: paused;
+  }
+
+  .details-cue::after,
+  .sim-disclosure > summary:not(:has(.details-cue))::after,
+  .context-disclosure > summary:not(:has(.details-cue))::after {
+    transition-property: transform;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+  }
+
+  .btn-tactile,
+  .mood-btn,
+  .chip-toggle,
+  .measure-toggle {
+    transition-property: scale, background-color, border-color, color, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+  }
+
+  .nav-btn,
+  .bottom-nav-btn,
+  .action-chip,
+  .mission-btn,
+  .earth-btn,
+  .chart-tab {
+    transition-property: scale, transform, background-color, border-color, color;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+  }
+
+  .btn-tactile:not(:disabled):not([aria-disabled="true"]):active,
+  .nav-btn:not(:disabled):not([aria-disabled="true"]):active,
+  .bottom-nav-btn:not(:disabled):not([aria-disabled="true"]):active,
+  .action-chip:not(:disabled):not([aria-disabled="true"]):not(.locked):active,
+  .mood-btn:not(:disabled):not([aria-disabled="true"]):active,
+  .chip-toggle:not(:disabled):not([aria-disabled="true"]):active,
+  .mission-btn:not(:disabled):not([aria-disabled="true"]):not(.locked):not(.mission-btn--hold):not(.missionBtnHold):active,
+  .earth-btn:not(:disabled):not([aria-disabled="true"]):active,
+  .chart-tab:not(:disabled):not([aria-disabled="true"]):active,
+  .measure-toggle:not(:disabled):not([aria-disabled="true"]):active {
+    scale: 0.96;
+  }
+
+  .mission-btn.mission-btn--hold:active,
+  .mission-btn.missionBtnHold:active {
+    scale: 1;
+  }
+
+  .system-group {
+    transition-property: background-color, border-color;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+  }
+
+  .mood-btn.selected {
+    transform: translateY(-2px);
+  }
+
+  .mission-btn.done {
+    transform: translateY(2px);
+  }
+
+  .hotspot {
+    transition-property: scale, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+  }
+
+  .floating-hint {
+    transition-property: opacity, transform;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+  }
+
+  .mini-bar-fill {
+    transition-property: width, background-color;
+    transition-duration: 300ms;
+    transition-timing-function: ease-out;
+  }
+
+  .breath-orb {
+    animation: breatheCycle 6s ease-in-out infinite;
+  }
+
+  .toast {
+    transform: translateX(-50%) translateY(16px);
+    transition-property: opacity, transform, visibility;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+  }
+
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .nav-btn:not(:disabled):not([aria-disabled="true"]):hover,
+  .action-chip:not(:disabled):not([aria-disabled="true"]):not(.locked):hover {
+    transform: translateY(-1px);
+  }
+
+  .hotspot:hover {
+    scale: 1.04;
+  }
+}
+
+@media (forced-colors: active) {
+  .mood-btn.selected,
+  .chip-toggle.active {
+    border-style: solid;
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  .system-group.highlight {
+    border-style: solid;
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  .measure-toggle.omitted {
+    border-style: dashed;
+  }
+
+  .control-row.is-omitted {
+    outline: 1px dashed CanvasText;
+    outline-offset: 2px;
+  }
+
+  .val-pill.is-empty {
+    border-color: transparent;
+  }
+
+  .mission-btn.done,
+  .earth-btn.sent {
+    border-style: solid;
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  .mission-btn.locked {
+    border-style: dashed;
+    border-color: GrayText;
+  }
+}

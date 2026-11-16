@@ -1,0 +1,447 @@
+
+/* MÓVIL Y TABLET (<= 900px) */
+@media (max-width: 900px) {
+  body {
+    padding: 12px 14px calc(112px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .topbar {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .brand {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .brand h1,
+  .brand .brand-title {
+    font-size: 1.25rem;
+  }
+
+  .brand p {
+    display: none;
+  }
+
+  .topbar-right {
+    gap: 6px;
+    min-width: 0;
+    justify-content: flex-end;
+  }
+
+  .topbar-right .session-pill,
+  .topbar-right .val-pill {
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    overflow-wrap: anywhere;
+  }
+
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar-nav {
+    display: none;
+  }
+
+  .astro-stage {
+    padding: 14px 16px 16px;
+  }
+
+  .astro-svg-wrap {
+    min-height: 0;
+    max-height: none;
+    padding-top: 8px;
+  }
+
+  .astro-float {
+    width: min(100%, 245px);
+    max-height: none;
+    height: auto;
+  }
+
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 80;
+    background: var(--surface);
+    border-top: var(--border);
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .bottom-nav-btn {
+    min-width: 0;
+    min-height: 54px;
+    padding: 5px 2px;
+    border: 1px solid transparent;
+    box-shadow: none;
+    font-size: 0.7rem;
+    line-height: 1.1;
+  }
+
+  .bottom-nav-btn.active {
+    border-color: var(--ink);
+  }
+
+  .bottom-nav-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .group-head {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .card,
+  .system-group,
+  .diagnosis-card {
+    padding: 16px;
+  }
+
+  .toast {
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    max-width: calc(100vw - 28px);
+    width: max-content;
+    text-align: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .context-select {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .context-grid,
+  .nasa-grid-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .save-action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .save-action-bar .btn-tactile {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 600px), (pointer: coarse) {
+  input[type="range"]::-webkit-slider-thumb {
+    width: 26px;
+    height: 26px;
+    margin-top: -9px;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+@media (max-width: 520px) {
+  .dual-bp {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mood-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .mood-btn {
+    min-height: 52px;
+    font-size: 0.7rem;
+    padding: 8px 4px;
+  }
+}
+
+@media (max-width: 390px) {
+  .brand-badge {
+    width: 38px;
+    height: 38px;
+  }
+
+  .topbar-right .topbar-user-pill {
+    display: none;
+  }
+
+  .bottom-nav-btn {
+    font-size: 0.6875rem;
+  }
+
+  .astro-svg-wrap {
+    min-height: 0;
+    max-height: none;
+    padding-top: 8px;
+  }
+
+  .astro-float {
+    width: min(100%, 235px);
+    max-height: none;
+    height: auto;
+  }
+
+  .floating-hint {
+    top: 0 !important;
+    font-size: 0.66rem;
+    padding: 3px 8px;
+  }
+
+  #floatHintLeft {
+    left: 4px !important;
+  }
+
+  #floatHintRight {
+    right: 4px !important;
+  }
+}
+
+/* DISPOSICIÓN DE TARJETAS PARA PANTALLAS AMPLIAS (>= 901px) */
+@media (min-width: 901px) {
+  body {
+    padding: 18px 24px 32px 264px;
+  }
+
+  .topbar {
+    max-width: 1240px;
+    margin: 0 auto 14px;
+    justify-content: flex-end;
+    min-height: 40px;
+  }
+
+  .topbar.topbar-astro,
+  .topbar.topbar-controls,
+  .topbar.topbar-clean {
+    display: none;
+  }
+
+  .topbar > .brand {
+    display: none;
+  }
+
+  .app-layout {
+    display: block;
+    width: 100%;
+    max-width: none;
+  }
+
+  .sidebar-nav {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 240px;
+    height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-width: 0 2.5px 0 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 16px 12px;
+    gap: 8px;
+    z-index: 30;
+  }
+
+  .sidebar-nav .nav-btn {
+    padding-block: 8px;
+    font-size: 0.86rem;
+  }
+
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .sidebar-brand h1,
+  .sidebar-brand .brand-title {
+    font-family: var(--font-display), sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-size: 1.3rem;
+    line-height: 1.1;
+    display: block;
+  }
+
+  .sidebar-brand p {
+    margin-top: 4px;
+    color: var(--ink-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+
+  .sidebar-brand .brand-badge {
+    flex: 0 0 44px;
+  }
+
+  .view-container {
+    max-width: 1240px;
+    margin: 0 auto;
+    min-width: 0;
+  }
+
+  .center-stack,
+  .controls-stack,
+  .controls-grid,
+  .right-stack {
+    display: grid;
+    gap: 18px;
+    align-items: start;
+  }
+
+  .center-stack {
+    grid-template-columns: minmax(280px, 0.85fr) minmax(340px, 1.15fr);
+    align-items: start;
+  }
+
+  .center-stack > .demo-quick-bar,
+  .center-stack > .nasa-banner,
+  .center-stack > #nasaDecisionCard {
+    grid-column: 1 / -1;
+  }
+
+  .astro-stage {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .astro-svg-wrap {
+    flex: 1;
+    min-height: 250px;
+  }
+
+  .astro-float {
+    max-height: 270px;
+    width: auto;
+    max-width: 100%;
+  }
+
+  .controls-stack,
+  .controls-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .controls-stack > .card,
+  .controls-stack > .sim-banner,
+  .controls-stack > .sim-active-banner,
+  .controls-stack > .sim-disclosure,
+  .controls-stack > .save-action-bar,
+  .controls-grid > .card,
+  .controls-grid > .sim-banner,
+  .controls-grid > .sim-active-banner,
+  .controls-grid > .sim-disclosure,
+  .controls-grid > .save-action-bar {
+    grid-column: 1 / -1;
+  }
+
+  .controls-stack > #group-mind,
+  .controls-stack > #group-heart,
+  .controls-stack > #group-body,
+  .controls-stack > #group-context,
+  .controls-grid > #group-mind,
+  .controls-grid > #group-heart,
+  .controls-grid > #group-body,
+  .controls-grid > #group-context {
+    grid-column: span 1;
+    align-self: stretch;
+  }
+
+  .controls-stack > #group-context .context-grid,
+  .controls-grid > #group-context .context-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .monitor-layout {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  }
+
+  .missions-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nasa-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .center-stack > *,
+  .controls-stack > *,
+  .controls-grid > *,
+  .right-stack > * {
+    min-width: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .context-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1200px) {
+  .nasa-layout,
+  .monitor-layout,
+  .center-stack {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1120px) {
+  .nasa-decision {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 16px 20px;
+    align-items: stretch;
+  }
+
+  .nasa-decision > .nasa-comparison {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1280px) {
+  .controls-stack,
+  .controls-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .controls-stack > #group-mind,
+  .controls-stack > #group-heart,
+  .controls-stack > #group-body,
+  .controls-grid > #group-mind,
+  .controls-grid > #group-heart,
+  .controls-grid > #group-body {
+    grid-column: span 2;
+  }
+
+  .controls-stack > #group-context,
+  .controls-grid > #group-context {
+    grid-column: span 3;
+    align-self: start;
+  }
+
+  .controls-stack > .sim-disclosure,
+  .controls-grid > .sim-disclosure {
+    grid-column: span 3;
+    align-self: start;
+  }
+
+  .controls-stack > #group-context .context-grid,
+  .controls-grid > #group-context .context-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

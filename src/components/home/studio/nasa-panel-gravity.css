@@ -1,0 +1,457 @@
+
+.nasa-exit {
+  justify-self: start;
+}
+
+/* Simulador de Regreso a la Gravedad */
+.nasa-gravity-card {
+  min-width: 0;
+  margin-bottom: 0;
+  background: linear-gradient(180deg, var(--lavender-soft) 0%, var(--surface) 58%);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 3px 0 var(--ink);
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.nasa-gravity-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nasa-gravity-header h4 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.nasa-gravity-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nasa-gravity-toolbar .nasa-actions-inline {
+  margin-top: 0;
+}
+
+.nasa-sim-launch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding-block: 8px;
+  padding-inline-start: 14px;
+  padding-inline-end: 16px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--periwinkle-dark);
+  color: #FFF;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 3px 0 var(--ink);
+  transition-property: background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.nasa-sim-launch:not(:disabled):not([aria-disabled="true"]):active {
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.nasa-sim-launch:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.gravity-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  overscroll-behavior: contain;
+  background: rgba(28, 25, 23, 0.62);
+}
+
+.gravity-tablet {
+  position: relative;
+  width: min(100%, 560px);
+  max-height: min(88dvh, 720px);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;
+  background: var(--surface);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 0 var(--ink);
+}
+
+.gravity-tablet-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border-bottom: 2px solid var(--ink);
+}
+
+.gravity-tablet-header h3,
+.gravity-tablet-header h4 {
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.15rem;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.gravity-tablet-footer {
+  flex: none;
+  padding: 16px 18px;
+  background: var(--surface);
+  border-top: 2px solid var(--ink);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.gravity-tablet-footer .nasa-modal-trigger {
+  min-height: 44px;
+  padding-block: 6px;
+  padding-inline-start: 12px;
+  padding-inline-end: 14px;
+}
+
+.gravity-modal-close {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--surface-alt);
+  color: var(--ink);
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition-property: background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.gravity-modal-close:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.gravity-tablet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: 16px 18px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+/* Escena de nave subiendo a pantalla completa */
+.gravity-launch-layer {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: calc(72px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.gravity-launch-controls {
+  position: fixed;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  max-width: calc(100% - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.gravity-g-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 2px solid #FFFDF8;
+  border-radius: 999px;
+  background: #2A2845;
+  color: #FFFDF8;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.gravity-skip-btn {
+  min-height: 44px;
+  padding: 6px 16px;
+  border: 2px solid #FFFDF8;
+  border-radius: 999px;
+  background: #2A2845;
+  color: #FFFDF8;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition-property: background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.gravity-skip-btn:focus-visible {
+  outline: 3px solid #FFFDF8;
+  outline-offset: 2px;
+}
+
+.gravity-rocket-svg {
+  width: clamp(170px, 34vw, 240px);
+  height: auto;
+  display: block;
+}
+
+.rocket-flames {
+  transform-origin: 110px 222px;
+}
+
+@keyframes tabletFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Animaciones GPU-only */
+@keyframes rocketFlyUp {
+  0% {
+    transform: translate3d(0, calc(50dvh + 220px), 0) scale(0.95);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, calc(-50dvh - 260px), 0) scale(1.04);
+    opacity: 0;
+  }
+}
+
+@keyframes flameFlicker {
+  0%, 100% {
+    transform: scale3d(0.94, 0.88, 1);
+    opacity: 0.86;
+  }
+  50% {
+    transform: scale3d(1.06, 1.15, 1);
+    opacity: 1;
+  }
+}
+
+@keyframes tabletReveal {
+  0% {
+    transform: translate3d(0, 14px, 0) scale(0.97);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+.gravity-tablet-reveal {
+  animation: tabletFadeIn 150ms ease-out;
+}
+
+/* Tablilla de resultados */
+.gravity-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.gravity-mode-switch .chip-toggle {
+  width: 100%;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.gravity-verdict-banner {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.gravity-verdict-banner.verdict-go {
+  background: var(--green-bg);
+}
+
+.gravity-verdict-banner.verdict-warn {
+  background: var(--yellow-bg);
+}
+
+.gravity-verdict-banner.verdict-danger {
+  background: var(--red-bg);
+}
+
+.gravity-verdict-banner.verdict-neutral {
+  background: var(--surface-alt);
+}
+
+.gravity-verdict-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.gravity-verdict-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  flex: none;
+  background: #CBD5E1;
+}
+
+.verdict-go .gravity-verdict-dot,
+.gravity-verdict-dot.verdict-go {
+  background: var(--green);
+}
+
+.verdict-warn .gravity-verdict-dot,
+.gravity-verdict-dot.verdict-warn {
+  background: var(--yellow);
+}
+
+.verdict-danger .gravity-verdict-dot,
+.gravity-verdict-dot.verdict-danger {
+  background: var(--red);
+}
+
+.verdict-neutral .gravity-verdict-dot,
+.gravity-verdict-dot.verdict-neutral {
+  background: #CBD5E1;
+}
+
+.gravity-systemic-note {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  background: var(--yellow-bg);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.gravity-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gravity-metric-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  background: var(--surface-alt);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 4px;
+}
+
+.gravity-metric-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--ink-muted);
+}
+
+.gravity-metric-value {
+  font-size: 1.08rem;
+  font-weight: 800;
+}
+
+.gravity-metric-delta {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.gravity-countermeasures {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  background: var(--surface-alt);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.gravity-countermeasures ul {
+  margin: 0;
+  padding-left: 1.35em;
+  list-style: disc;
+}
+
+.gravity-countermeasures li + li {
+  margin-top: 4px;
+}
+
+.gravity-study-ref {
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+

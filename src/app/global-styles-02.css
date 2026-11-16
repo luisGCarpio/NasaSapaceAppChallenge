@@ -1,0 +1,477 @@
+
+/* PANEL CENTRAL: ASTRO-BUDDY + SEMÁFORO */
+.center-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.astro-stage {
+  position: relative;
+  background: radial-gradient(circle at 50% 45%, #FFFFFF 0%, #EFE9DC 100%);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-hard);
+  padding: 16px 18px 18px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.stage-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.traffic-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 2px 0 var(--ink);
+  transition-property: background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.astro-svg-wrap {
+  position: relative;
+  padding-top: 8px;
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.astro-float {
+  display: block;
+  width: min(100%, 275px);
+  max-width: 100%;
+  height: auto;
+}
+
+.heart-beat {
+  transform-origin: 150px 166px;
+  transform-box: view-box;
+}
+
+.hotspot {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition-property: opacity;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+/* BURBUJAS FLOTANTES DE ESTADO */
+.floating-hint {
+  position: absolute;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  padding: 5px 10px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  box-shadow: 0 2px 0 var(--ink);
+  pointer-events: none;
+  transition-property: opacity;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+/* TARJETA DE CONCLUSIÓN CRUZADA */
+.astro-right-col {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+
+.diagnosis-card {
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-hard);
+  padding: 14px 16px;
+  background: var(--green-bg);
+  transition-property: background-color;
+  transition-duration: 200ms;
+  transition-timing-function: ease-out;
+}
+
+.diagnosis-card details.diagnosis-details {
+  margin-bottom: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.diagnosis-card details summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1.8px solid var(--ink);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+  list-style: none;
+  font-weight: 800;
+  font-size: 0.86rem;
+  -webkit-tap-highlight-color: transparent;
+  transition-property: background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.diagnosis-card details summary::-webkit-details-marker {
+  display: none;
+}
+
+.details-cue {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--ink-muted);
+}
+
+.details-cue::after {
+  content: '▾';
+  font-size: 0.9rem;
+  color: var(--ink);
+  display: inline-block;
+}
+
+details[open] > summary .details-cue::after {
+  transform: rotate(180deg);
+}
+
+.diagnosis-card details[open] > summary {
+  margin-bottom: 10px;
+}
+
+.diagnosis-card details[open] > p,
+.diagnosis-card details[open] > .meta-pills-row {
+  padding-inline: 2px;
+}
+
+.diagnosis-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--surface);
+  border: 1.8px solid var(--ink);
+  padding: 2px 8px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+.diagnosis-title {
+  font-size: 1.05rem;
+  line-height: 1.25;
+  margin-bottom: 8px;
+}
+
+.astro-missions-strip {
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-hard);
+  background: var(--surface);
+  padding: 12px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.astro-missions-copy strong {
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.96rem;
+  line-height: 1.25;
+}
+
+.astro-strip-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.diagnosis-text {
+  font-size: 0.94rem;
+  font-weight: 600;
+  line-height: 1.45;
+  margin-bottom: 14px;
+}
+
+.actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.action-chip {
+  font-family: inherit;
+  min-height: 44px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding-block: 8px;
+  padding-inline-start: 10px;
+  padding-inline-end: 12px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: var(--shadow-hard);
+  transition-property: background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.action-chip:not(:disabled):not([aria-disabled="true"]):not(.locked):active {
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.action-chip.primary-alert { background: var(--tangerine-dark); color: #FFF; }
+
+/* PANEL DERECHO: GRÁFICAS Y GAMIFICACIÓN */
+.right-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chart-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.chart-tab {
+  font-family: inherit;
+  min-height: 44px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  padding: 4px 9px;
+  border-radius: 8px;
+  border: 1.8px solid var(--ink);
+  background: var(--surface-alt);
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition-property: background-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.chart-tab.active {
+  background: var(--periwinkle-dark);
+  color: #FFF;
+}
+
+.chart-box {
+  background: #FFF;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.mini-bars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.mini-bar-item {
+  background: var(--surface-alt);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 8px;
+  text-align: center;
+}
+
+.mini-bar-track {
+  height: 8px;
+  background: #FFF;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 6px 0 3px;
+}
+
+.mini-bar-fill {
+  height: 100%;
+  transition-property: background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+/* MISIONES DIARIAS */
+.missions-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mission-btn {
+  font-family: inherit;
+  border: 2px solid var(--ink);
+  background: #FFF;
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: var(--shadow-hard);
+  transition-property: background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.mission-btn:not(:disabled):not([aria-disabled="true"]):not(.locked):active {
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.mission-btn.done {
+  background: var(--green-bg);
+  box-shadow: none;
+}
+
+.mission-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+
+.mission-xp {
+  flex-shrink: 0;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.7rem;
+  background: var(--yellow-bg);
+  border: 1.5px solid var(--ink);
+  padding: 1px 5px;
+  border-radius: 6px;
+}
+
+/* BOTÓN DE COMUNICACIÓN A TIERRA */
+.earth-btn {
+  width: 100%;
+  min-height: 44px;
+  background: var(--periwinkle-dark);
+  color: #FFF;
+  border: var(--border);
+  border-radius: 14px;
+  padding-block: 12px;
+  padding-inline-start: 11px;
+  padding-inline-end: 13px;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: var(--shadow-hard);
+  transition-property: background-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.earth-btn:not(:disabled):not([aria-disabled="true"]):active {
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.earth-btn.sent { background: var(--green); color: var(--ink); }
+
+/* MODAL MINI-JUEGO DE RESPIRACIÓN */
+.breath-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 25, 23, 0.55);
+  display: none;
+  place-items: center;
+  z-index: 99;
+  padding: 20px;
+  overscroll-behavior: contain;
+}
+.breath-overlay.open { display: grid; }
+.breath-modal {
+  background: var(--surface);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 0 var(--ink);
+  padding: 26px;
+  max-width: 360px;
+  width: 100%;
+  max-height: 88dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  text-align: center;
+}
+.breath-orb {
+  width: 130px;
+  height: 130px;
+  margin: 22px auto;
+  border-radius: 50%;
+  background: var(--bubblegum);
+  border: 3px solid var(--ink);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.1rem;
+}
+@keyframes breatheCycle {
+  0%, 100% { transform: scale(0.85); background: var(--lavender-soft); }
+  50% { transform: scale(1.22); background: var(--bubblegum); }
+}
+
+/* TOAST FEEDBACK */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background: var(--ink);
+  color: #FFF;
+  border: 1px solid transparent;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.86rem;
+  transition-property: opacity, visibility;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+  z-index: 140;
+}
