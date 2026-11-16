@@ -15,9 +15,12 @@ import type { NasaStudyId } from '@/domain/nasa/nasa-types';
 import {
   apiCompleteMission,
   apiGetState,
+  apiResetDemoState,
   apiResetMissions,
   apiRunScenario,
 } from '@/lib/client-api';
+import { createDemoLocalState } from '@/lib/local-state';
+import { getMissionDateKey } from '@/domain/missions/mission-date';
 import type { NasaTimelinePoint } from '@/server/repositories/nasa-datasets-repo';
 import type { PublicUserState } from '@/server/storage/types';
 
@@ -48,6 +51,7 @@ interface AresContextValue {
   commsOpen: boolean;
   commsDraftMessage: string;
   refreshState: () => Promise<void>;
+  resetDemoState: () => Promise<PublicUserState>;
   login: (identifier: string, password: string) => Promise<void>;
   register: (payload: { name: string; username: string; email?: string; role?: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
@@ -67,9 +71,9 @@ interface AresContextValue {
 const AresContext = createContext<AresContextValue | null>(null);
 
 export function AresProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<PublicUserState | null>(null);
-  const stateRef = useRef<PublicUserState | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState<PublicUserState | null>(() => createDemoLocalState());
+  const stateRef = useRef<PublicUserState | null>(state);
+  const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [activeSimulation, setActiveSimulation] = useState<ActiveSimulation | null>(null);
   const simulationRequest = useRef(0);
@@ -84,13 +88,12 @@ export function AresProvider({ children }: { children: ReactNode }) {
   }, [state]);
 
   const refreshState = useCallback(async () => {
-    setLoading(true);
     try {
       const next = await apiGetState();
       setState(next);
       setAuthError(null);
     } catch (err) {
-      setAuthError(err instanceof Error ? err.message : 'No se pudo cargar la bitácora local.');
+      setAuthError(err instanceof Error ? err.message : 'No se pudieron cargar los datos locales.');
     } finally {
       setLoading(false);
     }
@@ -98,6 +101,26 @@ export function AresProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void refreshState();
+  }, [refreshState]);
+
+  useEffect(() => {
+    const refreshOnNewMissionDay = () => {
+      const lastResetDate = stateRef.current?.gamification.lastResetDate;
+      if (lastResetDate && lastResetDate !== getMissionDateKey()) {
+        void refreshState();
+      }
+    };
+    const interval = window.setInterval(refreshOnNewMissionDay, 30_000);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshOnNewMissionDay();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', refreshOnNewMissionDay);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', refreshOnNewMissionDay);
+    };
   }, [refreshState]);
 
   const clearSimulation = useCallback(() => {
@@ -180,6 +203,16 @@ export function AresProvider({ children }: { children: ReactNode }) {
     setState(res.state);
   }, []);
 
+  const resetDemoState = useCallback(async () => {
+    clearSimulation();
+    setActiveNasaReplay(null);
+    setNasaTimeline(null);
+    const next = await apiResetDemoState();
+    setState(next);
+    setAuthError(null);
+    return next;
+  }, [clearSimulation]);
+
   const value = useMemo<AresContextValue>(
     () => ({
       state,
@@ -192,6 +225,7 @@ export function AresProvider({ children }: { children: ReactNode }) {
       commsOpen,
       commsDraftMessage,
       refreshState,
+      resetDemoState,
       login,
       register,
       logout,
@@ -218,6 +252,7 @@ export function AresProvider({ children }: { children: ReactNode }) {
       commsOpen,
       commsDraftMessage,
       refreshState,
+      resetDemoState,
       login,
       register,
       logout,

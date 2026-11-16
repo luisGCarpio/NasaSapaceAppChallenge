@@ -1,5 +1,12 @@
 import { evaluateHealth } from '@/domain/health';
-import { readLocalState, saveLocalCheckin, completeLocalMission, resetLocalMissions, logLocalComms } from './local-state';
+import {
+  readLocalState,
+  resetToDemoLocalState,
+  saveLocalCheckin,
+  completeLocalMission,
+  resetLocalMissions,
+  logLocalComms,
+} from './local-state';
 import type {
   HealthEvaluation,
   HealthStatus,
@@ -46,6 +53,10 @@ async function requestJson<T>(url: string, options: RequestInit = {}): Promise<T
 
 export async function apiGetState(): Promise<PublicUserState> {
   return readLocalState();
+}
+
+export async function apiResetDemoState(): Promise<PublicUserState> {
+  return resetToDemoLocalState();
 }
 
 export function apiEvaluate(

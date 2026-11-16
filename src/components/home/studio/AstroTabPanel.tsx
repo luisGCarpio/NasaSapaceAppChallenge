@@ -1,7 +1,7 @@
 'use client';
 
 import type { ActiveNasaReplay, ActiveSimulation } from '@/context/AresContext';
-import type { HealthEvaluation, PartialVitalValues, SystemId } from '@/domain/health';
+import type { HealthEvaluation, PartialVitalValues, ScenarioId, SystemId } from '@/domain/health';
 import type { GravityStressMode } from '@/domain/nasa/cohort-decision';
 import type { ObservationContext } from '@/domain/nasa/nasa-types';
 import { AresIcon } from '@/components/ui/Icons';
@@ -21,6 +21,8 @@ interface AstroTabPanelProps {
   onHighlightSystem: (sys: SystemId) => void;
   onClearReplayOrSim: () => void;
   onNavigateTab: (tab: TabKey) => void;
+  onRunScenario?: (id: ScenarioId) => void;
+  onResetDemo?: () => void;
   onActionMission?: (missionId: 'hydrate' | 'exercise' | 'rest') => void;
   onOpenBreather?: () => void;
   onPingEarth: () => void;
@@ -37,6 +39,8 @@ export function AstroTabPanel({
   onHighlightSystem,
   onClearReplayOrSim,
   onNavigateTab,
+  onRunScenario,
+  onResetDemo,
   onPingEarth,
 }: AstroTabPanelProps) {
   const overallLvl = statusToLevel(evaluation.overallStatus);
@@ -51,6 +55,54 @@ export function AstroTabPanel({
 
   return (
     <section className="center-stack">
+      {!activeNasaReplay ? (
+        <div className="demo-quick-bar" role="region" aria-label="Escenarios rápidos de demostración">
+          <div className="demo-quick-copy">
+            <strong>Modo Demo para el Jurado</strong>
+            <span>Prueba escenarios clínicos y datos NASA reales sin cargar nada</span>
+          </div>
+          <div className="demo-quick-actions">
+            <button
+              type="button"
+              className={`btn-tactile${!activeSimulation && overallLvl === 0 ? ' active-green' : ''}`}
+              aria-pressed={!activeSimulation && overallLvl === 0}
+              onClick={() => {
+                if (activeSimulation) {
+                  onClearReplayOrSim();
+                } else {
+                  onResetDemo?.();
+                }
+              }}
+            >
+              Día normal (Demo)
+            </button>
+            <button
+              type="button"
+              className={`btn-tactile${activeSimulation?.id === 'warning' ? ' active-yellow' : ''}`}
+              aria-pressed={activeSimulation?.id === 'warning'}
+              onClick={() => onRunScenario?.('warning')}
+            >
+              Simular fatiga
+            </button>
+            <button
+              type="button"
+              className={`btn-tactile${activeSimulation?.id === 'critical' ? ' active-red' : ''}`}
+              aria-pressed={activeSimulation?.id === 'critical'}
+              onClick={() => onRunScenario?.('critical')}
+            >
+              Simular alerta roja
+            </button>
+            <button
+              type="button"
+              className="btn-tactile"
+              onClick={() => onNavigateTab('nasa')}
+            >
+              Casos NASA
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {activeNasaReplay ? (
         <div className="nasa-banner">
           <span>

@@ -28,6 +28,11 @@ export function MonitorTabPanel({
   nasaTimeline,
   onNavigateTab,
 }: MonitorTabPanelProps) {
+  const sortedPersonalObs = [...(userState?.observations ?? [])]
+    .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt))
+    .slice(-14);
+  const hasMultipleDays = new Set(sortedPersonalObs.map((obs) => obs.dateKey)).size > 1;
+
   const rawPoints: SeriesPoint[] =
     activeNasaReplay
       ? (nasaTimeline ?? []).slice(-14).map((p) => ({
@@ -37,22 +42,21 @@ export function MonitorTabPanel({
           glucose: p.observation.vitals.glucose ?? null,
           status: p.evaluation.overallStatus,
         }))
-      : [...(userState?.observations ?? [])]
-          .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt))
-          .slice(-14)
-          .map((obs) => {
-            const d = new Date(obs.capturedAt);
-            const label = Number.isNaN(d.getTime())
-              ? obs.dateKey
+      : sortedPersonalObs.map((obs) => {
+          const d = new Date(obs.capturedAt);
+          const label = Number.isNaN(d.getTime())
+            ? obs.dateKey
+            : hasMultipleDays
+              ? d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })
               : d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-            return {
-              label,
-              score: obs.readinessScore,
-              hr: obs.vitals.heart_rate ?? null,
-              glucose: obs.vitals.glucose ?? null,
-              status: obs.overallStatus,
-            };
-          });
+          return {
+            label,
+            score: obs.readinessScore,
+            hr: obs.vitals.heart_rate ?? null,
+            glucose: obs.vitals.glucose ?? null,
+            status: obs.overallStatus,
+          };
+        });
 
   const obsNewestFirst = [...(userState?.observations ?? [])].sort((a, b) =>
     b.capturedAt.localeCompare(a.capturedAt)

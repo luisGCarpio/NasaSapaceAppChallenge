@@ -320,6 +320,15 @@ test('mission-scene-machine: getMissionSceneCopy no contiene textos de puntos ni
   }
 });
 
+test('mission-scene-machine: la hora de comunicaciones usa la hora local', () => {
+  const sentAt = '2026-11-15T10:30:00.000Z';
+  const expected = new Date(sentAt).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  const copy = getMissionSceneCopy('comms', 'normal', { sentAt });
+  assert.ok(copy.metrics.some((metric) => metric.delta === `Registro ${expected}`));
+  const invalid = getMissionSceneCopy('comms', 'normal', { sentAt: 'fecha inválida' });
+  assert.ok(invalid.metrics.some((metric) => metric.delta === 'Registro Hoy'));
+});
+
 test('SSR MissionActionModal renderiza escenas SVG animadas, Saltar y atributos de diálogo accesibles', async () => {
   await withCssStub(async () => {
     const { MissionActionModal } = await import('../src/components/home/studio/MissionActionModal');

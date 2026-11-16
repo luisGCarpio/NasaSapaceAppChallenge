@@ -1,4 +1,4 @@
-import { ALGORITHM_VERSION, SCENARIOS_META, VITAL_SPECS, evaluateHealth, normalizeContext } from '@/domain/health';
+import { ALGORITHM_VERSION, DEFAULT_CONTEXT, SCENARIOS_META, VITAL_SPECS, evaluateHealth, normalizeContext } from '@/domain/health';
 import { createDefaultMissions, createInitialGamification, XP_PER_LEVEL, type GamificationState, type MissionItem } from '@/domain/missions/mission-catalog';
 import { computeNextStreak, getMissionDateKey } from '@/domain/missions/mission-date';
 import { applyClinicalRestrictionsToMissions } from '@/domain/missions/mission-safety';
@@ -11,8 +11,18 @@ const MAX_OBSERVATIONS = 180;
 const MAX_HISTORY_DAYS = 60;
 const MAX_COMMS_LOG = 40;
 
-function hasLocalStorage(): boolean {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+// When browser storage is blocked, keep changes available for this page session.
+let memoryStorage: string | null = null;
+let useMemoryStorage = false;
+
+function getLocalStorage(): Storage | null {
+  if (typeof window === 'undefined' || useMemoryStorage) return null;
+  try {
+    return window.localStorage ?? null;
+  } catch {
+    useMemoryStorage = true;
+    return null;
+  }
 }
 
 function generateSafeId(): string {
@@ -25,6 +35,62 @@ function generateSafeId(): string {
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
+
+function shiftDateKey(baseDateKey: string, deltaDays: number): string {
+  const ms = Date.parse(`${baseDateKey}T12:00:00Z`) + deltaDays * 86_400_000;
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+interface DemoSeedDay {
+  offset: number;
+  vitals: PartialVitalValues;
+  context: Partial<ObservationContext>;
+}
+
+const DEMO_SEED_DAYS: readonly DemoSeedDay[] = [
+  {
+    offset: -6,
+    vitals: { sleep_hours: 7.6, mood: 'bien', heart_rate: 68, bp_systolic: 116, bp_diastolic: 74, glucose: 85, temperature: 36.5 },
+    context: { activityState: 'rest', posture: 'seated', glucoseTiming: 'fasting', tempMethod: 'oral' },
+  },
+  {
+    offset: -5,
+    vitals: { sleep_hours: 7.4, mood: 'bien', heart_rate: 70, bp_systolic: 118, bp_diastolic: 76, glucose: 88, temperature: 36.6 },
+    context: { activityState: 'rest', posture: 'seated', glucoseTiming: 'fasting', tempMethod: 'oral' },
+  },
+  {
+    offset: -4,
+    vitals: { sleep_hours: 5.5, mood: 'cansado', heart_rate: 82, bp_systolic: 124, bp_diastolic: 81, glucose: 94, temperature: 36.8 },
+    context: { activityState: 'rest', posture: 'seated', glucoseTiming: 'fasting', tempMethod: 'oral', symptoms: ['Cefalea'] },
+  },
+  {
+    offset: -3,
+    vitals: { sleep_hours: 7.8, mood: 'bien', heart_rate: 69, bp_systolic: 115, bp_diastolic: 74, glucose: 84, temperature: 36.5 },
+    context: { activityState: 'rest', posture: 'seated', glucoseTiming: 'fasting', tempMethod: 'oral' },
+  },
+  {
+    offset: -2,
+    vitals: { sleep_hours: 7.0, mood: 'bien', heart_rate: 104, bp_systolic: 126, bp_diastolic: 82, glucose: 96, temperature: 36.9 },
+    context: {
+      activityState: 'orthostatic_tilt',
+      posture: 'standing_tilt',
+      glucoseTiming: 'post_meal',
+      tempMethod: 'oral',
+      confirmedRepeated: true,
+      symptoms: ['Mareo ortostático'],
+    },
+  },
+  {
+    offset: -1,
+    vitals: { sleep_hours: 7.9, mood: 'excelente', heart_rate: 67, bp_systolic: 114, bp_diastolic: 73, glucose: 83, temperature: 36.5 },
+    context: { activityState: 'rest', posture: 'seated', glucoseTiming: 'fasting', tempMethod: 'oral' },
+  },
+  {
+    offset: 0,
+    vitals: { sleep_hours: 7.8, mood: 'excelente', heart_rate: 70, bp_systolic: 116, bp_diastolic: 74, glucose: 86, temperature: 36.6 },
+    context: { activityState: 'rest', posture: 'seated', glucoseTiming: 'fasting', tempMethod: 'oral' },
+  },
+];
 
 function createEmptyLocalState(): PublicUserState {
   return {
@@ -49,6 +115,107 @@ function createEmptyLocalState(): PublicUserState {
     algorithmVersion: ALGORITHM_VERSION,
     vitalSpecs: VITAL_SPECS,
     scenarios: SCENARIOS_META,
+  };
+}
+
+export function createDemoLocalState(): PublicUserState {
+  const base = createEmptyLocalState();
+  const today = getMissionDateKey();
+  const observations: HealthObservation[] = [];
+  const history: CheckinEntry[] = [];
+  let latestEval = base.evaluation;
+
+  for (const day of DEMO_SEED_DAYS) {
+    const dateKey = shiftDateKey(today, day.offset);
+    const capturedAt = `${dateKey}T13:30:00.000Z`;
+    const context = normalizeContext({ ...DEFAULT_CONTEXT, ...day.context });
+    const evaluation = evaluateHealth(day.vitals, {
+      context,
+      priorObservations: observations,
+      previousStatus: history.at(-1)?.overallStatus ?? null,
+    });
+    const observationId = `demo-obs-${dateKey}`;
+
+    const observation: HealthObservation = {
+      observationId,
+      dateKey,
+      capturedAt,
+      source: 'demo_seed',
+      vitals: evaluation.vitals,
+      context: evaluation.context,
+      overallStatus: evaluation.overallStatus,
+      readinessScore: evaluation.readinessScore,
+      coveragePct: evaluation.coverage.coveragePct,
+      qualityTier: evaluation.quality.tier,
+      crossConclusionId: evaluation.crossConclusionId,
+    };
+
+    const entry: CheckinEntry = {
+      id: `demo-day-${dateKey}`,
+      dateKey,
+      dayLabel: dateKey,
+      timestamp: capturedAt,
+      updatesCount: 1,
+      vitals: evaluation.vitals,
+      context: evaluation.context,
+      coveragePct: evaluation.coverage.coveragePct,
+      qualityTier: evaluation.quality.tier,
+      observationIds: [observationId],
+      overallStatus: evaluation.overallStatus,
+      readinessScore: evaluation.readinessScore,
+      crossConclusionId: evaluation.crossConclusionId,
+      algorithmVersion: evaluation.algorithmVersion,
+      source: 'demo_seed',
+    };
+
+    observations.push(observation);
+    history.push(entry);
+    latestEval = evaluation;
+  }
+
+  const latestObs = observations[observations.length - 1];
+  const missions = applyClinicalRestrictionsToMissions(
+    createDefaultMissions().map((m) =>
+      m.id === 'hydrate' ? { ...m, completed: true, lastAwardedDate: today } : m
+    ),
+    latestEval
+  );
+
+  return {
+    ...base,
+    user: {
+      id: 'elena-demo',
+      username: 'elena',
+      email: 'elena@nasa.gov',
+      name: 'Cmdr. Elena Vance',
+      role: 'Misión Artemis · Demo interactiva',
+    },
+    currentVitals: latestObs.vitals,
+    currentContext: latestObs.context,
+    history,
+    observations,
+    lastCheckinAt: latestObs.capturedAt,
+    gamification: {
+      xp: 150,
+      level: 2,
+      xpForNextLevel: XP_PER_LEVEL,
+      xpProgressInLevel: 50,
+      streak: 6,
+      lastStreakDate: today,
+      lastResetDate: today,
+      missions,
+    },
+    commsLog: [
+      {
+        id: `demo-comms-${today}`,
+        timestamp: `${today}T13:35:00.000Z`,
+        overallStatus: latestEval.overallStatus,
+        readinessScore: latestEval.readinessScore,
+        message: latestEval.commsMessage,
+        copiedToClipboard: true,
+      },
+    ],
+    evaluation: latestEval,
   };
 }
 
@@ -221,70 +388,64 @@ function hydrateDerivedState(state: PublicUserState): { state: PublicUserState; 
   return { state, dayResetChanged };
 }
 
-function isQuotaExceededError(err: unknown): boolean {
-  if (!err || typeof err !== 'object') return false;
-  const domErr = err as { name?: string; code?: number };
-  return (
-    domErr.name === 'QuotaExceededError' ||
-    domErr.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-    domErr.code === 22 ||
-    domErr.code === 1014
-  );
-}
-
 function writeStorageState(state: PublicUserState): void {
-  window.localStorage.setItem(KEY, JSON.stringify(state));
+  const serialized = JSON.stringify(state);
+  const storage = getLocalStorage();
+  if (storage) {
+    try {
+      storage.setItem(KEY, serialized);
+      return;
+    } catch {
+      useMemoryStorage = true;
+    }
+  }
+  if (typeof window !== 'undefined') memoryStorage = serialized;
 }
 
 export function readLocalState(): PublicUserState {
+  const isBrowserDom = typeof window !== 'undefined' && typeof window.document !== 'undefined';
   let raw: string | null = null;
-  if (hasLocalStorage()) {
+  const storage = getLocalStorage();
+  if (storage) {
     try {
-      raw = window.localStorage.getItem(KEY);
+      raw = storage.getItem(KEY);
     } catch {
-      raw = null;
+      useMemoryStorage = true;
+      raw = memoryStorage;
     }
+  } else if (typeof window !== 'undefined') {
+    raw = memoryStorage;
   }
 
   const { state: parsedState, wasCorrupt } = parseAndSanitizeState(raw);
+  const isPriorEmptyVisit =
+    Boolean(raw) &&
+    !wasCorrupt &&
+    parsedState.observations.length === 0 &&
+    parsedState.currentVitals === null &&
+    !parsedState.user.email;
+
+  if (isBrowserDom && !wasCorrupt && (!raw || isPriorEmptyVisit)) {
+    const demoState = createDemoLocalState();
+    if (typeof window !== 'undefined') writeStorageState(demoState);
+    return demoState;
+  }
+
   const { state, dayResetChanged } = hydrateDerivedState(applyRetentionLimits(parsedState));
 
-  if ((dayResetChanged || wasCorrupt) && hasLocalStorage()) {
-    try {
-      writeStorageState(state);
-    } catch {
-      // No bloquear la lectura si el navegador impide escribir en este momento
-    }
-  }
+  if ((dayResetChanged || wasCorrupt) && typeof window !== 'undefined') writeStorageState(state);
 
   return state;
 }
 
+export function resetToDemoLocalState(): PublicUserState {
+  return save(createDemoLocalState());
+}
+
 function save(state: PublicUserState): PublicUserState {
   const { state: hydrated } = hydrateDerivedState(applyRetentionLimits(state));
-  if (!hasLocalStorage()) {
-    return hydrated;
-  }
-
-  try {
-    writeStorageState(hydrated);
-    return hydrated;
-  } catch (err) {
-    if (isQuotaExceededError(err)) {
-      const pruned = applyRetentionLimits(hydrated, {
-        maxObservations: 30,
-        maxHistoryDays: 14,
-        maxCommsLog: 10,
-      });
-      try {
-        writeStorageState(pruned);
-        return pruned;
-      } catch {
-        throw new Error('Almacenamiento local lleno. Libera espacio en el navegador para guardar cambios.');
-      }
-    }
-    throw new Error(err instanceof Error ? err.message : 'No se pudo guardar la bitácora en almacenamiento local.');
-  }
+  if (typeof window !== 'undefined') writeStorageState(hydrated);
+  return hydrated;
 }
 
 export function saveLocalCheckin(vitals: unknown, rawContext?: Partial<ObservationContext>, submissionId?: string) {

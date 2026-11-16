@@ -79,6 +79,7 @@ export function useAresStudio(initialTab: TabKey) {
     nasaTimeline,
     setNasaTimeline,
     refreshState,
+    resetDemoState,
     login,
     logout,
     applyUpdatedState,
@@ -91,8 +92,12 @@ export function useAresStudio(initialTab: TabKey) {
   } = useAres();
 
   const [tab, setTab] = useState<TabKey>(initialTab);
-  const [draft, setDraft] = useState<StudioDraft>(() => createCleanDraft());
-  const [context, setContext] = useState<ObservationContext>(() => ({ ...DEFAULT_CONTEXT }));
+  const [draft, setDraft] = useState<StudioDraft>(() => draftFromVitals(state?.currentVitals ?? null));
+  const [context, setContext] = useState<ObservationContext>(() =>
+    state?.currentContext
+      ? { ...state.currentContext, symptoms: [...state.currentContext.symptoms] }
+      : { ...DEFAULT_CONTEXT, symptoms: [] }
+  );
   const [highlightedSys, setHighlightedSys] = useState<SystemId | null>(null);
   const [nasaPriorObs, setNasaPriorObs] = useState<PriorObservationInput[]>([]);
   const [nasaObsId, setNasaObsId] = useState<string | null>(null);
@@ -100,8 +105,11 @@ export function useAresStudio(initialTab: TabKey) {
   const savingRef = useRef(false);
   const [saveMessage, setSaveMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [completedLocalIds, setCompletedLocalIds] = useState<string[]>([]);
-  const [hydrationLevel, setHydrationLevel] = useState<number>(0);
-  const hydrationLevelRef = useRef<number>(0);
+  const initialHydrateDone = Boolean(
+    state?.gamification?.missions?.find((m) => m.id === 'hydrate')?.completed
+  );
+  const [hydrationLevel, setHydrationLevel] = useState<number>(initialHydrateDone ? 4 : 0);
+  const hydrationLevelRef = useRef<number>(initialHydrateDone ? 4 : 0);
   const [exerciseStep, setExerciseStep] = useState<number>(0);
   const exerciseStepRef = useRef<number>(0);
   const [restNightActive, setRestNightActive] = useState<boolean>(false);
@@ -133,6 +141,14 @@ export function useAresStudio(initialTab: TabKey) {
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Un cambio de misiones o comunicaciones puede recrear los objetos sin cambiar
+  // los datos guardados. Solo rehidratar cuando cambie la medición real.
+  const savedMeasurementKey = JSON.stringify([
+    state?.user.id ?? null,
+    state?.lastCheckinAt ?? null,
+    state?.currentVitals ?? null,
+    state?.currentContext ?? null,
+  ]);
   useEffect(() => {
     setDraft(draftFromVitals(state?.currentVitals ?? null));
     setContext(
@@ -140,7 +156,7 @@ export function useAresStudio(initialTab: TabKey) {
         ? { ...state.currentContext, symptoms: [...state.currentContext.symptoms] }
         : { ...DEFAULT_CONTEXT, symptoms: [] }
     );
-  }, [state?.user.id, state?.lastCheckinAt, state?.currentVitals, state?.currentContext]);
+  }, [savedMeasurementKey]);
 
   useEffect(() => {
     const nextUserId = state?.user.id ?? null;
@@ -555,7 +571,7 @@ export function useAresStudio(initialTab: TabKey) {
         applyUpdatedState,
       });
       if (msg.ok) {
-        showToast(msg.text.includes('anteriormente') ? msg.text : 'Toma guardada en bitácora');
+        showToast(msg.text.includes('anteriormente') ? msg.text : 'Medición guardada');
       } else {
         setSaveMessage(msg);
       }
@@ -604,7 +620,7 @@ export function useAresStudio(initialTab: TabKey) {
       setCommsSentAt(res.sentAt);
       setLastCommsResult(res);
       if (activeMissionSceneRef.current?.actionId !== 'comms') {
-        showToast(res.copied ? 'Aviso copiado y registrado' : 'Aviso registrado en bitácora');
+        showToast(res.copied ? 'Informe copiado y registrado' : 'Informe registrado');
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al registrar aviso';
@@ -641,7 +657,25 @@ export function useAresStudio(initialTab: TabKey) {
     setNasaObsId(null);
     setNasaPriorObs([]);
     resetCommsStatus();
-    showToast('Regresaste a tu bitácora personal');
+    showToast('Volviste a los datos de la misión');
+  }
+
+  async function handleResetDemo() {
+    clearModesIfNeeded();
+    setNasaObsId(null);
+    setNasaPriorObs([]);
+    setSaveMessage(null);
+    resetCommsStatus();
+    try {
+      const next = await resetDemoState();
+      setDraft(draftFromVitals(next.currentVitals));
+      setContext(next.currentContext
+        ? { ...next.currentContext, symptoms: [...next.currentContext.symptoms] }
+        : { ...DEFAULT_CONTEXT, symptoms: [] });
+      showToast('Datos de demostración restaurados (7 días)');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'No se pudo restaurar la demostración.');
+    }
   }
 
   function handleHighlightSystem(sys: SystemId) {
@@ -719,6 +753,7 @@ export function useAresStudio(initialTab: TabKey) {
     handlePingEarth,
     handleLoadReplayPoint,
     handleClearReplayOrSim,
+    handleResetDemo,
     handleHighlightSystem,
     clearHighlight,
   };

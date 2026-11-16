@@ -356,7 +356,10 @@ export function getMissionSceneCopy(
           : ctx.copiedToClipboard === true
             ? 'Portapapeles y bitácora ✓'
             : 'Registrado en bitácora';
-      const timeText = ctx.sentAt ? ctx.sentAt.slice(11, 16) : 'Hoy';
+      const sentDate = ctx.sentAt ? new Date(ctx.sentAt) : null;
+      const timeText = sentDate && !Number.isNaN(sentDate.getTime())
+        ? sentDate.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+        : 'Hoy';
 
       return {
         modalTitle: 'Transmisión satelital a Houston',

@@ -35,6 +35,7 @@ interface ControlsTabPanelProps {
   onToggleSystemMeasured: (keys: readonly VitalToggleKey[]) => void;
   onChangeContext: <K extends keyof ObservationContext>(key: K, val: ObservationContext[K]) => void;
   onRunScenario: (id: ScenarioId) => void;
+  onResetDemo?: () => void;
   onClearAllMeasured: () => void;
   onSaveCheckin: () => void;
 }
@@ -152,6 +153,7 @@ export function ControlsTabPanel({
   onToggleSystemMeasured,
   onChangeContext,
   onRunScenario,
+  onResetDemo,
   onClearAllMeasured,
   onSaveCheckin,
 }: ControlsTabPanelProps) {
@@ -410,7 +412,11 @@ export function ControlsTabPanel({
           <span>Simulaciones de prueba (opcional)</span>
           <span className="details-cue" aria-hidden="true">Abrir</span>
         </summary>
-        <ControlsSimStrip onRunScenario={onRunScenario} onClearAllMeasured={onClearAllMeasured} />
+        <ControlsSimStrip
+          onRunScenario={onRunScenario}
+          onClearAllMeasured={onClearAllMeasured}
+          onResetDemo={onResetDemo}
+        />
       </details>
     </section>
   );

@@ -8,6 +8,7 @@ import { AstroTabPanel } from './studio/AstroTabPanel';
 import { AstroStageCard } from './studio/AstroStageCard';
 import { ControlsTabPanel } from './studio/ControlsTabPanel';
 import { MissionsTabPanel } from './studio/MissionsTabPanel';
+import { MonitorTabPanel } from './studio/MonitorTabPanel';
 import type { TabKey } from './studio/studio-types';
 import { STUDIO_NAV_ITEMS, StudioNavIcon } from './studio/StudioNavSvg';
 import { useAresStudio } from './studio/useAresStudio';
@@ -16,11 +17,6 @@ const TabLoadingFallback = () => (
   <div className="card empty-message" aria-busy="true">
     Cargando panel...
   </div>
-);
-
-const MonitorTabPanel = dynamic(
-  () => import('./studio/MonitorTabPanel').then((mod) => mod.MonitorTabPanel),
-  { loading: TabLoadingFallback }
 );
 
 const NasaTabPanel = dynamic(
@@ -105,7 +101,7 @@ export function AresStudioView({ initialTab = 'astro' }: AresStudioViewProps) {
                 {authRetryBanner}
               </div>
             ) : (
-              <span className="session-pill">Cargando bitácora local...</span>
+              <span className="session-pill">Modo Demo · Cmdr. Elena Vance</span>
             )}
           </div>
         )}
@@ -182,6 +178,8 @@ export function AresStudioView({ initialTab = 'astro' }: AresStudioViewProps) {
               onHighlightSystem={s.handleHighlightSystem}
               onClearReplayOrSim={s.handleClearReplayOrSim}
               onNavigateTab={s.switchTab}
+              onRunScenario={(id) => void s.handleRunScenario(id)}
+              onResetDemo={() => void s.handleResetDemo()}
               onActionMission={(id) => void s.handleCompleteMission(id)}
               onOpenBreather={s.handleOpenBreather}
               onPingEarth={() => void s.handlePingEarth()}
@@ -202,6 +200,7 @@ export function AresStudioView({ initialTab = 'astro' }: AresStudioViewProps) {
               onToggleSystemMeasured={s.handleToggleSystemMeasured}
               onChangeContext={s.handleChangeContext}
               onRunScenario={(id) => void s.handleRunScenario(id)}
+              onResetDemo={() => void s.handleResetDemo()}
               onClearAllMeasured={s.handleClearAllMeasured}
               onSaveCheckin={() => void s.handleSaveCheckin()}
             />

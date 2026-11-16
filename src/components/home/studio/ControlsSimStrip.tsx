@@ -6,9 +6,10 @@ import { AresIcon } from '@/components/ui/Icons';
 interface ControlsSimStripProps {
   onRunScenario: (id: ScenarioId) => void;
   onClearAllMeasured: () => void;
+  onResetDemo?: () => void;
 }
 
-export function ControlsSimStrip({ onRunScenario, onClearAllMeasured }: ControlsSimStripProps) {
+export function ControlsSimStrip({ onRunScenario, onClearAllMeasured, onResetDemo }: ControlsSimStripProps) {
   return (
     <div className="sim-strip">
       <p className="sim-strip-note">
@@ -24,6 +25,11 @@ export function ControlsSimStrip({ onRunScenario, onClearAllMeasured }: Controls
         <button type="button" className="btn-tactile active-red" onClick={() => onRunScenario('critical')}>
           Alerta
         </button>
+        {onResetDemo ? (
+          <button type="button" className="btn-tactile" onClick={onResetDemo}>
+            Restaurar demo
+          </button>
+        ) : null}
         <button type="button" className="btn-tactile" onClick={onClearAllMeasured}>
           <AresIcon name="sync" size={16} /> Limpiar
         </button>

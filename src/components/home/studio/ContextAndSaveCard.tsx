@@ -36,7 +36,7 @@ export function ContextAndSaveCard({
   };
 
   const saveHelperText = !userState
-    ? 'Cargando bitácora local para guardar...'
+    ? 'Listo para guardar mediciones.'
     : isSimulationOrReplay
       ? 'Modo simulación: los datos de prueba no se guardan en tu historial.'
       : canSaveCount === 0
